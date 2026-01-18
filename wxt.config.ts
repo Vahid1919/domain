@@ -7,4 +7,14 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
   }),
+  manifest: {
+    commands: {
+      open_dashboard: {
+        suggested_key: {
+          default: "Ctrl+Shift+Y",
+        },
+        description: "Open dashboard",
+      },
+    },
+  },
 });
