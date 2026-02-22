@@ -1,4 +1,4 @@
-# Kill Switch
+# Tab Limit
 
 A browser extension for managing site access and screen time. Block specific domains, set per-domain daily time budgets, and optionally notify a contact when limits are changed — all without an account or a backend.
 
@@ -27,8 +27,8 @@ Built with [WXT](https://wxt.dev), React 19, Tailwind CSS v4, and shadcn/ui.
 ### Installation
 
 ```sh
-git clone https://github.com/Vahid1919/kill-switch.git
-cd kill-switch
+git clone https://github.com/Vahid1919/tab-limit.git
+cd tab-limit
 pnpm install
 ```
 
