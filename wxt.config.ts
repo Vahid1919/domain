@@ -8,6 +8,8 @@ export default defineConfig({
     plugins: [tailwindcss()],
   }),
   manifest: {
+    permissions: ["storage", "tabs", "alarms"],
+    host_permissions: ["<all_urls>"],
     commands: {
       open_dashboard: {
         suggested_key: {

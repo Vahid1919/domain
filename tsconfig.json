@@ -7,5 +7,6 @@
     "paths": {
       "@/*": ["./*"]
     }
-  }
+  },
+  "exclude": ["tests", "vitest.config.ts"]
 }
