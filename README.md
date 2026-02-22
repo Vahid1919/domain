@@ -1,6 +1,6 @@
 # Kill Switch
 
-A browser extension that helps you reclaim your focus. Block distracting sites outright, set daily time limits, and keep an accountability partner in the loop — all without needing an account or any server.
+A browser extension for managing site access and screen time. Block specific domains, set per-domain daily time budgets, and optionally notify a contact when limits are changed — all without an account or a backend.
 
 Built with [WXT](https://wxt.dev), React 19, Tailwind CSS v4, and shadcn/ui.
 
@@ -8,11 +8,11 @@ Built with [WXT](https://wxt.dev), React 19, Tailwind CSS v4, and shadcn/ui.
 
 ## Features
 
-- **Block sites permanently** — redirect any domain to a custom blocked page immediately
-- **Daily time limits** — track active time per domain and redirect once the limit is hit
-- **Countdown toast** — an unobtrusive on-page timer shows how many minutes remain
-- **Accountability emails** — optionally notify a buddy via EmailJS when you add/remove limits, block/unblock sites, or hit a limit
-- **Motivational blocked page** — customise the message and image shown when a site is blocked
+- **Site blocking** — redirect any domain to a custom page immediately and permanently
+- **Daily time budgets** — track active time per domain and redirect once the limit is reached
+- **Countdown toast** — an unobtrusive on-page timer shows remaining time for the current domain
+- **Change notifications** — optionally notify a designated contact via EmailJS when limits or blocks are modified
+- **Customizable blocked page** — configure the message and image shown when a site is blocked
 - **Keyboard shortcut** — open the popup with `Ctrl+Shift+Y` (configurable)
 
 ---
@@ -34,7 +34,7 @@ pnpm install
 
 ### Environment variables (EmailJS)
 
-The accountability email feature is powered by [EmailJS](https://www.emailjs.com), which sends emails directly from the browser — no backend required. The credentials are baked into the extension at build time and are **never stored** in `chrome.storage` or exposed in the UI.
+The notification email feature is powered by [EmailJS](https://www.emailjs.com), which sends emails directly from the browser — no backend required. The credentials are baked into the extension at build time and are **never stored** in `chrome.storage` or exposed in the UI.
 
 1. Copy the example file:
 
