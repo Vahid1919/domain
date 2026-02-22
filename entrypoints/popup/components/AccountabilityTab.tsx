@@ -94,7 +94,10 @@ export default function AccountabilityTab() {
   const handleTest = async () => {
     setTestStatus("sending");
     setTestError("");
-    const resp = await chrome.runtime.sendMessage({ type: "TEST_EMAIL" });
+    const resp = await chrome.runtime.sendMessage({
+      type: "TEST_EMAIL",
+      settings,
+    });
     if (resp?.ok) {
       setTestStatus("ok");
     } else {

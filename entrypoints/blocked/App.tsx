@@ -8,6 +8,7 @@ import type { MotivationalSettings } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Clock, Plus, Pencil, X, Check } from "lucide-react";
 
 function formatMinutes(m: number): string {
   if (m < 60) return `${m}m`;
@@ -55,6 +56,9 @@ export default function BlockedApp() {
   const [editText, setEditText] = useState("");
   const [editImage, setEditImage] = useState("");
   const [imageError, setImageError] = useState(false);
+  const [extendStatus, setExtendStatus] = useState<
+    "idle" | "loading" | "done" | "error"
+  >("idle");
 
   const countdown = useCountdownToMidnight();
 
@@ -84,20 +88,34 @@ export default function BlockedApp() {
     setEditing(false);
   };
 
+  const handleExtend = async () => {
+    setExtendStatus("loading");
+    const resp = await chrome.runtime.sendMessage({
+      type: "EXTEND_LIMIT",
+      domain,
+      minutes: 5,
+    });
+    if (resp?.ok) {
+      setExtendStatus("done");
+      // Go back to the previous page
+      setTimeout(() => history.back(), 600);
+    } else {
+      setExtendStatus("error");
+      setTimeout(() => setExtendStatus("idle"), 2500);
+    }
+  };
+
   const hasBg = !!settings.imageUrl && !imageError;
 
   return (
     <div
-      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-slate-950"
-      style={
-        hasBg
-          ? {
-              backgroundImage: `url(${settings.imageUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }
-          : undefined
-      }
+      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
+      style={{
+        background: hasBg ? undefined : "oklch(0.10 0.015 260)",
+        backgroundImage: hasBg ? `url(${settings.imageUrl})` : undefined,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
       {/* Hidden img to detect load errors */}
       {settings.imageUrl && (
@@ -110,77 +128,133 @@ export default function BlockedApp() {
         />
       )}
 
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+
+      {/* Subtle grid texture */}
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
 
       {/* Card */}
-      <div className="relative z-10 w-full max-w-sm mx-4">
-        <div className="bg-slate-900/85 border border-white/10 rounded-2xl p-8 shadow-2xl backdrop-blur-md text-center">
-          {/* Stop icon */}
-          <div className="w-16 h-16 rounded-full bg-red-500/15 border border-red-500/25 flex items-center justify-center mx-auto mb-6">
-            <svg
-              width="26"
-              height="26"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="#ef4444"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-            </svg>
+      <div className="relative z-10 w-full max-w-90 mx-4">
+        <div
+          className="rounded-2xl border p-7 text-center"
+          style={{
+            background: "oklch(0.15 0.01 260 / 90%)",
+            borderColor: "oklch(1 0 0 / 10%)",
+            boxShadow: isPermanent
+              ? "0 0 0 1px oklch(1 0 0 / 5%), 0 24px 64px oklch(0 0 0 / 60%)"
+              : "0 0 0 1px oklch(1 0 0 / 5%), 0 24px 64px oklch(0 0 0 / 60%), 0 0 60px oklch(0.65 0.22 22 / 12%)",
+            backdropFilter: "blur(20px)",
+          }}
+        >
+          {/* Status indicator */}
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-5"
+            style={{
+              background: isPermanent
+                ? "oklch(0.65 0.14 50 / 15%)"
+                : "oklch(0.65 0.22 22 / 15%)",
+              border: isPermanent
+                ? "1px solid oklch(0.65 0.14 50 / 30%)"
+                : "1px solid oklch(0.65 0.22 22 / 30%)",
+            }}
+          >
+            {isPermanent ? (
+              <X
+                style={{ color: "oklch(0.75 0.14 50)" }}
+                className="w-5 h-5"
+                strokeWidth={2.5}
+              />
+            ) : (
+              <Clock
+                style={{ color: "oklch(0.70 0.22 22)" }}
+                className="w-5 h-5"
+                strokeWidth={2.5}
+              />
+            )}
           </div>
 
-          {/* Domain + headline */}
-          <h1 className="text-xl font-bold text-white mb-0.5">{domain}</h1>
-          {isPermanent ? (
-            <>
-              <p className="text-amber-400 font-semibold text-sm mb-1">
-                Site permanently blocked
-              </p>
-              <p className="text-slate-400 text-xs mb-7">
-                This site is on your blocked list. Remove it from the extension
-                to regain access.
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-red-400 font-semibold text-sm mb-1">
-                Daily limit reached
-              </p>
-              {limitMinutes !== null && (
-                <p className="text-slate-400 text-xs mb-7">
-                  You&apos;ve used your full {formatMinutes(limitMinutes)}{" "}
-                  allowance for today.
-                </p>
-              )}
-            </>
-          )}
+          {/* Domain */}
+          <p
+            className="text-xs font-mono mb-1.5 tracking-widest uppercase"
+            style={{ color: "oklch(0.55 0.01 260)" }}
+          >
+            {domain}
+          </p>
+
+          <h1
+            className="text-lg font-semibold tracking-tight mb-1"
+            style={{ color: "oklch(0.93 0.01 260)" }}
+          >
+            {isPermanent ? "Site blocked" : "Time's up"}
+          </h1>
+
+          <p
+            className="text-xs leading-relaxed mb-6"
+            style={{ color: "oklch(0.50 0.01 260)" }}
+          >
+            {isPermanent
+              ? "This site is on your blocked list."
+              : limitMinutes !== null
+                ? `Your ${formatMinutes(limitMinutes)} daily budget for this site has been used.`
+                : "Your daily budget for this site has been used."}
+          </p>
 
           {/* Motivational message */}
           {!editing ? (
             <button
-              className="w-full text-left bg-white/5 hover:bg-white/8 border border-white/8 rounded-xl px-4 py-3.5 mb-6 group transition-colors cursor-pointer"
+              className="w-full text-left rounded-xl px-4 py-3 mb-5 group transition-colors cursor-pointer"
+              style={{
+                background: "oklch(1 0 0 / 4%)",
+                border: "1px solid oklch(1 0 0 / 7%)",
+              }}
               onClick={() => setEditing(true)}
             >
-              <p className="text-slate-200 text-sm leading-relaxed italic">
+              <p
+                className="text-sm leading-relaxed italic"
+                style={{ color: "oklch(0.70 0.01 260)" }}
+              >
                 &ldquo;
-                {settings.text || "Click here to add a motivational message…"}
+                {settings.text || "Add a note to keep yourself on track…"}
                 &rdquo;
               </p>
-              <p className="text-slate-500 text-xs mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                ✏️ Click to edit message &amp; background
+              <p
+                className="text-[11px] mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
+                style={{ color: "oklch(0.45 0.01 260)" }}
+              >
+                <Pencil className="w-2.5 h-2.5" />
+                Edit message
               </p>
             </button>
           ) : (
-            <div className="bg-white/5 border border-white/8 rounded-xl p-4 mb-6 text-left space-y-3">
+            <div
+              className="rounded-xl p-4 mb-5 text-left space-y-3"
+              style={{
+                background: "oklch(1 0 0 / 4%)",
+                border: "1px solid oklch(1 0 0 / 8%)",
+              }}
+            >
               <div className="space-y-1.5">
-                <Label className="text-slate-300 text-xs font-medium">
-                  Motivational message
+                <Label
+                  className="text-[11px] font-medium"
+                  style={{ color: "oklch(0.55 0.01 260)" }}
+                >
+                  Message
                 </Label>
                 <textarea
-                  className="w-full bg-white/10 border border-white/10 rounded-lg p-2.5 text-sm text-white placeholder-slate-500 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500 transition"
+                  className="w-full rounded-lg px-3 py-2 text-sm resize-none focus:outline-none transition"
+                  style={{
+                    background: "oklch(1 0 0 / 8%)",
+                    border: "1px solid oklch(1 0 0 / 10%)",
+                    color: "oklch(0.90 0.01 260)",
+                  }}
                   rows={3}
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
@@ -188,21 +262,30 @@ export default function BlockedApp() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-slate-300 text-xs font-medium">
+                <Label
+                  className="text-[11px] font-medium"
+                  style={{ color: "oklch(0.55 0.01 260)" }}
+                >
                   Background image URL
                 </Label>
                 <Input
-                  className="bg-white/10 border-white/10 text-white text-sm h-8 placeholder-slate-500 focus-visible:ring-blue-500"
+                  className="h-8 text-xs"
+                  style={{
+                    background: "oklch(1 0 0 / 8%)",
+                    borderColor: "oklch(1 0 0 / 10%)",
+                    color: "oklch(0.90 0.01 260)",
+                  }}
                   value={editImage}
                   onChange={(e) => setEditImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/…"
+                  placeholder="https://…"
                 />
               </div>
-              <div className="flex gap-2 justify-end pt-0.5">
+              <div className="flex gap-2 justify-end">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-slate-400 h-7 text-xs"
+                  className="h-7 text-xs"
+                  style={{ color: "oklch(0.45 0.01 260)" }}
                   onClick={() => setEditing(false)}
                 >
                   Cancel
@@ -214,31 +297,68 @@ export default function BlockedApp() {
             </div>
           )}
 
-          {/* Reset countdown — only for timed limits */}
-          {!isPermanent && (
-            <div className="flex items-center justify-center gap-2 text-slate-500 text-xs">
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+          {/* Actions */}
+          <div className="flex flex-col gap-2.5">
+            {/* +5 min button — only for timed limits */}
+            {!isPermanent && (
+              <button
+                onClick={handleExtend}
+                disabled={extendStatus === "loading" || extendStatus === "done"}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-medium transition-all disabled:opacity-60"
+                style={{
+                  background:
+                    extendStatus === "done"
+                      ? "oklch(0.55 0.16 160 / 20%)"
+                      : "oklch(0.72 0.16 210 / 15%)",
+                  border:
+                    extendStatus === "done"
+                      ? "1px solid oklch(0.55 0.16 160 / 40%)"
+                      : "1px solid oklch(0.72 0.16 210 / 35%)",
+                  color:
+                    extendStatus === "done"
+                      ? "oklch(0.70 0.16 160)"
+                      : "oklch(0.80 0.12 210)",
+                }}
               >
-                <circle cx="12" cy="12" r="10" />
-                <polyline points="12 6 12 12 16 14" />
-              </svg>
-              Resets in&nbsp;
-              <span className="font-mono text-slate-400 font-medium">
-                {countdown}
-              </span>
-            </div>
-          )}
-          {isPermanent && (
-            <p className="text-slate-600 text-xs">
-              ✊ Stay focused. You&apos;ve got this.
-            </p>
-          )}
+                {extendStatus === "done" ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Limit extended
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    {extendStatus === "loading"
+                      ? "Extending…"
+                      : "5 more minutes"}
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* Reset countdown */}
+            {!isPermanent && (
+              <div
+                className="flex items-center justify-center gap-1.5 text-[11px] font-mono"
+                style={{ color: "oklch(0.38 0.01 260)" }}
+              >
+                <Clock className="w-3 h-3" />
+                Resets in&nbsp;
+                <span style={{ color: "oklch(0.48 0.01 260)" }}>
+                  {countdown}
+                </span>
+              </div>
+            )}
+
+            {isPermanent && (
+              <p
+                className="text-[11px]"
+                style={{ color: "oklch(0.38 0.01 260)" }}
+              >
+                Remove it from the extension to regain access.
+              </p>
+            )}
+          </div>
         </div>
       </div>
     </div>

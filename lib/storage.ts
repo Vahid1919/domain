@@ -42,6 +42,17 @@ export async function saveLimitedSites(sites: LimitedSite[]): Promise<void> {
     await chrome.storage.local.set({ limitedSites: sites });
 }
 
+export async function extendLimit(domain: string, extraMinutes: number): Promise<boolean> {
+    const sites = await getLimitedSites();
+    const idx = sites.findIndex(
+        (s) => domain === s.domain || domain.endsWith("." + s.domain),
+    );
+    if (idx === -1) return false;
+    sites[idx] = { ...sites[idx], limitMinutes: sites[idx].limitMinutes + extraMinutes };
+    await saveLimitedSites(sites);
+    return true;
+}
+
 // ── Blocked sites ─────────────────────────────────────────────────────────────
 
 export async function getBlockedSites(): Promise<BlockedSite[]> {

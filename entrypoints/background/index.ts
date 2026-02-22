@@ -4,6 +4,7 @@ import {
     getBlockedSites,
     getUsageData,
     getAccountabilitySettings,
+    extendLimit,
 } from "@/lib/storage";
 import type { LimitedSite, BlockedSite, UsageEntry } from "@/lib/storage";
 import { sendEmail } from "@/lib/email";
@@ -70,7 +71,7 @@ function onTick(): void {
     chrome.tabs.sendMessage(activeTabId, {
         type: "TIME_UPDATE", domain: currentDomain,
         usedSeconds, limitSeconds, remainingSeconds,
-    }).catch(() => {});
+    }).catch(() => { });
 
     if (remainingSeconds <= 0) {
         const domain = currentDomain;
@@ -130,7 +131,7 @@ async function updateActiveTab(tabId: number, url?: string): Promise<void> {
     chrome.tabs.sendMessage(tabId, {
         type: "TIME_UPDATE", domain, usedSeconds, limitSeconds,
         remainingSeconds: limitSeconds - usedSeconds,
-    }).catch(() => {});
+    }).catch(() => { });
 }
 
 // -- Init
@@ -201,13 +202,28 @@ export default defineBackground(async () => {
             sendResponse(null);
             return true;
         }
+        if (msg.type === "EXTEND_LIMIT") {
+            const domain = msg.domain as string;
+            const minutes = (msg.minutes as number) ?? 5;
+            extendLimit(domain, minutes).then((ok) => {
+                if (ok) {
+                    // Refresh the in-memory cache so the extension picks it up immediately
+                    getLimitedSites().then((sites) => { limitedSitesCache = sites; });
+                }
+                sendResponse({ ok });
+            });
+            return true;
+        }
         if (msg.type === "EMAIL_EVENT") {
             void dispatchEmail(msg.event as EmailEvent, msg.domain as string);
             sendResponse({ queued: true });
             return true;
         }
         if (msg.type === "TEST_EMAIL") {
-            getAccountabilitySettings()
+            const settingsPromise = msg.settings
+                ? Promise.resolve(msg.settings as AccountabilitySettings)
+                : getAccountabilitySettings();
+            settingsPromise
                 .then((s) => sendEmail(s, "limit_added", "example.com"))
                 .then((r) => sendResponse(r))
                 .catch((e) => sendResponse({ ok: false, error: String(e) }));
@@ -217,7 +233,7 @@ export default defineBackground(async () => {
 
     chrome.runtime.onConnect.addListener((port) => {
         if (port.name !== "keepalive") return;
-        port.onDisconnect.addListener(() => {});
+        port.onDisconnect.addListener(() => { });
     });
 
     chrome.alarms.create("flush", { periodInMinutes: 1 });
