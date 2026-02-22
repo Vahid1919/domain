@@ -1,12 +1,18 @@
 {
-  "extends": "./.wxt/tsconfig.json",
-  "compilerOptions": {
-    "allowImportingTsExtensions": true,
-    "jsx": "react-jsx",
-    "baseUrl": "./",
-    "paths": {
-      "@/*": ["./*"]
-    }
-  },
-  "exclude": ["tests", "vitest.config.ts"]
+    "extends": "./.wxt/tsconfig.json",
+    "compilerOptions": {
+        "allowImportingTsExtensions": true,
+        "jsx": "react-jsx",
+        "baseUrl": "./",
+        "ignoreDeprecations": "6.0",
+        "paths": {
+            "@/*": [
+                "./*"
+            ]
+        }
+    },
+    "exclude": [
+        "tests",
+        "vitest.config.ts"
+    ]
 }
