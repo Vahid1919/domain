@@ -11,7 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { X, Clock, Globe, ChevronDown, ImageIcon } from "lucide-react";
+import { X, Clock, ChevronDown, ImageIcon } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { SiteFavicon } from "./SiteFavicon";
 import { cn } from "@/lib/utils";
 import {
   getLimitedSites,
@@ -144,7 +146,7 @@ export default function SetLimitsTab() {
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 className="scroll-m-20 text-left self-start text-lg font-extrabold tracking-tight text-balance">
+          <h2 className="text-base font-semibold text-left self-start">
             Set Time Limits
           </h2>
         </CardTitle>
@@ -152,7 +154,7 @@ export default function SetLimitsTab() {
           Define maximum time allowed per website per day.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-4">
         {/* ── Add form ─────────────────────────────────────────────────── */}
         <form className="flex w-full items-end gap-3" onSubmit={handleAdd}>
           <span className="flex flex-col gap-1.5 w-full">
@@ -163,7 +165,7 @@ export default function SetLimitsTab() {
               placeholder="e.g., youtube.com"
               value={domainInput}
               onChange={(e) => setDomainInput(e.target.value)}
-              className="text-sm"
+              className="text-base"
             />
           </span>
           <span className="flex flex-col gap-1.5 w-full">
@@ -175,7 +177,7 @@ export default function SetLimitsTab() {
               placeholder="e.g., 30"
               value={minutesInput}
               onChange={(e) => setMinutesInput(e.target.value)}
-              className="text-sm"
+              className="text-base"
             />
           </span>
           <Button type="submit">Add</Button>
@@ -191,80 +193,93 @@ export default function SetLimitsTab() {
 
           {sites.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-6 text-muted-foreground">
-              <Clock className="w-8 h-8 opacity-40" />
-              <p className="text-sm">No limits set yet.</p>
+              <Clock className="w-8 h-8 text-primary opacity-50" />
+              <p className="text-base">No limits set yet.</p>
             </div>
           ) : (
             <ul className="flex flex-col gap-3">
-              {sites.map((site) => {
-                const limitSeconds = site.limitMinutes * 60;
-                const pct = Math.min(
-                  100,
-                  (site.usedSeconds / limitSeconds) * 100,
-                );
-                const remainingMinutes = Math.max(
-                  0,
-                  Math.ceil((limitSeconds - site.usedSeconds) / 60),
-                );
-                const isNearLimit = pct >= 80;
-                const isExceeded = pct >= 100;
+              <AnimatePresence initial={false}>
+                {sites.map((site) => {
+                  const limitSeconds = site.limitMinutes * 60;
+                  const pct = Math.min(
+                    100,
+                    (site.usedSeconds / limitSeconds) * 100,
+                  );
+                  const remainingMinutes = Math.max(
+                    0,
+                    Math.ceil((limitSeconds - site.usedSeconds) / 60),
+                  );
+                  const isNearLimit = pct >= 80;
+                  const isExceeded = pct >= 100;
 
-                return (
-                  <li key={site.domain}>
-                    <Card className="p-4 gap-3 flex flex-col shadow-none border border-border">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Globe className="w-4 h-4 shrink-0 text-muted-foreground" />
-                          <span className="font-semibold text-sm truncate">
-                            {site.domain}
-                          </span>
+                  return (
+                    <motion.li
+                      key={site.domain}
+                      layout
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{
+                        opacity: 0,
+                        x: -16,
+                        transition: { duration: 0.15 },
+                      }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                    >
+                      <Card className="p-4 gap-3 flex flex-col shadow-none border border-border">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <SiteFavicon domain={site.domain} size={16} />
+                            <span className="font-semibold text-base truncate">
+                              {site.domain}
+                            </span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemove(site.domain)}
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </Button>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleRemove(site.domain)}
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </Button>
-                      </div>
 
-                      <Progress
-                        value={pct}
-                        className={cn(
-                          "h-2.5 rounded-full",
-                          isExceeded
-                            ? "*:data-[slot=progress-indicator]:bg-destructive"
-                            : isNearLimit
-                              ? "*:data-[slot=progress-indicator]:bg-orange-500"
-                              : "*:data-[slot=progress-indicator]:bg-primary",
-                        )}
-                      />
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatTime(Math.floor(site.usedSeconds / 60))} used
-                        </span>
-                        <span
-                          className={
+                        <Progress
+                          value={pct}
+                          className={cn(
+                            "h-2.5 rounded-full",
                             isExceeded
-                              ? "text-destructive font-medium"
+                              ? "*:data-[slot=progress-indicator]:bg-destructive"
                               : isNearLimit
-                                ? "text-orange-500 font-medium"
-                                : ""
-                          }
-                        >
-                          {isExceeded
-                            ? "Limit reached"
-                            : `${formatTime(remainingMinutes)} left`}
-                        </span>
-                        <span>{formatTime(site.limitMinutes)} limit</span>
-                      </div>
-                    </Card>
-                  </li>
-                );
-              })}
+                                ? "*:data-[slot=progress-indicator]:bg-orange-500"
+                                : "*:data-[slot=progress-indicator]:bg-primary",
+                          )}
+                        />
+
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-primary" />
+                            {formatTime(Math.floor(site.usedSeconds / 60))} used
+                          </span>
+                          <span
+                            className={
+                              isExceeded
+                                ? "text-destructive font-medium"
+                                : isNearLimit
+                                  ? "text-orange-500 font-medium"
+                                  : ""
+                            }
+                          >
+                            {isExceeded
+                              ? "Limit reached"
+                              : `${formatTime(remainingMinutes)} left`}
+                          </span>
+                          <span>{formatTime(site.limitMinutes)} limit</span>
+                        </div>
+                      </Card>
+                    </motion.li>
+                  );
+                })}
+              </AnimatePresence>
             </ul>
           )}
         </div>
@@ -279,24 +294,27 @@ export default function SetLimitsTab() {
             onClick={() => setShowSettings((v) => !v)}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              <ImageIcon className="w-3.5 h-3.5" />
-              Limit Screen Settings
+              <ImageIcon className="w-3.5 h-3.5 text-primary" />
+              Block &amp; Limit Screen
             </span>
             <ChevronDown
               className={cn(
-                "w-4 h-4 text-muted-foreground transition-transform duration-200",
-                showSettings && "rotate-180",
+                "w-4 h-4 transition-transform duration-200",
+                showSettings
+                  ? "rotate-180 text-primary"
+                  : "text-muted-foreground",
               )}
             />
           </button>
 
           {showSettings && (
             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150">
-              <p className="text-xs text-muted-foreground">
-                Shown on the page that appears when you hit a limit.
+              <p className="text-sm text-muted-foreground">
+                Background &amp; message shown on both blocked and limit-reached
+                pages.
               </p>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="mot-text" className="text-xs">
+                <Label htmlFor="mot-text" className="text-sm">
                   Motivational message
                 </Label>
                 <textarea
@@ -309,7 +327,7 @@ export default function SetLimitsTab() {
                 />
               </div>
               <div className="flex flex-col gap-1.5">
-                <Label htmlFor="mot-image" className="text-xs">
+                <Label htmlFor="mot-image" className="text-sm">
                   Background image URL
                 </Label>
                 <Input

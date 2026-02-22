@@ -108,18 +108,18 @@ export default function AccountabilityTab() {
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="gap-3 py-4">
+      <CardHeader className="px-5">
         <CardTitle>
-          <h2 className="scroll-m-20 text-left self-start text-lg font-extrabold tracking-tight text-balance">
-            Accountability Partner
+          <h2 className="text-base font-semibold text-left self-start">
+            Accountability
           </h2>
         </CardTitle>
         <CardDescription>
           Send emails via EmailJS when you change habits — honest, not harsh.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-3 px-5 pb-4">
         {/* Your name */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="acct-name">Your name</Label>
@@ -130,7 +130,7 @@ export default function AccountabilityTab() {
             value={settings.name}
             onChange={(e) => update({ name: e.target.value })}
           />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Used to personalise accountability emails.
           </p>
         </div>
@@ -145,7 +145,7 @@ export default function AccountabilityTab() {
             value={settings.email}
             onChange={(e) => update({ email: e.target.value })}
           />
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             EmailJS credentials are configured at build time and kept out of
             storage.
           </p>
@@ -168,15 +168,15 @@ export default function AccountabilityTab() {
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {enabled ? (
-                      <Bell className="w-4 h-4 shrink-0 text-foreground" />
+                      <Bell className="w-4 h-4 shrink-0 text-primary" />
                     ) : (
                       <BellOff className="w-4 h-4 shrink-0 text-muted-foreground/40" />
                     )}
                     <div className="flex flex-col min-w-0">
-                      <span className="text-sm font-medium leading-none">
+                      <span className="text-base font-medium leading-none">
                         {label}
                       </span>
-                      <span className="text-[11px] text-muted-foreground mt-0.5">
+                      <span className="text-xs text-muted-foreground mt-0.5">
                         {description}
                       </span>
                     </div>
@@ -215,7 +215,7 @@ export default function AccountabilityTab() {
           </Button>
         </div>
         {testStatus === "error" && (
-          <p className="text-xs text-destructive">{testError}</p>
+          <p className="text-sm text-destructive">{testError}</p>
         )}
       </CardContent>
     </Card>

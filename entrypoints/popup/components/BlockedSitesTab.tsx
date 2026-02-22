@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { ShieldBan, Globe, X } from "lucide-react";
+import { ShieldBan, X } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { SiteFavicon } from "./SiteFavicon";
 import { getBlockedSites, saveBlockedSites } from "@/lib/storage";
 import type { BlockedSite } from "@/lib/storage";
 
@@ -51,7 +53,7 @@ export default function BlockedSitesTab() {
     <Card>
       <CardHeader>
         <CardTitle>
-          <h2 className="scroll-m-20 text-left self-start text-lg font-extrabold tracking-tight text-balance">
+          <h2 className="text-base font-semibold text-left self-start">
             Blocked Sites
           </h2>
         </CardTitle>
@@ -59,7 +61,7 @@ export default function BlockedSitesTab() {
           Completely block access to distracting websites at any time.
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-4">
         <form className="flex w-full items-end gap-3" onSubmit={handleBlock}>
           <span className="flex flex-col gap-1.5 w-full">
             <Label htmlFor="block-website">Website Domain</Label>
@@ -69,7 +71,7 @@ export default function BlockedSitesTab() {
               placeholder="e.g., twitter.com"
               value={domainInput}
               onChange={(e) => setDomainInput(e.target.value)}
-              className="text-sm"
+              className="text-base"
             />
           </span>
           <Button type="submit" variant="destructive">
@@ -86,34 +88,47 @@ export default function BlockedSitesTab() {
 
           {sites.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-6 text-muted-foreground">
-              <ShieldBan className="w-8 h-8 opacity-40" />
-              <p className="text-sm">No sites blocked yet.</p>
+              <ShieldBan className="w-8 h-8 text-primary opacity-50" />
+              <p className="text-base">No sites blocked yet.</p>
             </div>
           ) : (
             <ul className="flex flex-col gap-2">
-              {sites.map((site) => (
-                <li key={site.domain}>
-                  <div className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-border bg-muted/30">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Globe className="w-4 h-4 shrink-0 text-muted-foreground" />
-                      <span className="font-medium text-sm truncate">
-                        {site.domain}
-                      </span>
-                      <span className="ml-1 shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wide">
-                        Blocked
-                      </span>
+              <AnimatePresence initial={false}>
+                {sites.map((site) => (
+                  <motion.li
+                    key={site.domain}
+                    layout
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{
+                      opacity: 0,
+                      x: -16,
+                      transition: { duration: 0.15 },
+                    }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                  >
+                    <div className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-border bg-muted/30">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <SiteFavicon domain={site.domain} size={16} />
+                        <span className="font-medium text-base truncate">
+                          {site.domain}
+                        </span>
+                        <span className="ml-1 shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wide">
+                          Blocked
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => handleRemove(site.domain)}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={() => handleRemove(site.domain)}
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </Button>
-                  </div>
-                </li>
-              ))}
+                  </motion.li>
+                ))}
+              </AnimatePresence>
             </ul>
           )}
         </div>
