@@ -71,7 +71,7 @@ export default defineContentScript({
         // ── Build shadow DOM toast ─────────────────────────────────────────────
         function buildToast() {
             const host = document.createElement("div");
-            host.id = "__blkr_toast__";
+            host.id = "__killswitch_toast__";
             host.style.cssText =
                 "all:initial;position:fixed;bottom:24px;right:24px;z-index:2147483647;pointer-events:none;";
 

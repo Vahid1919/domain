@@ -1,6 +1,6 @@
 {
-  "name": "react-shadcn",
-  "description": "manifest.json description",
+  "name": "kill-switch",
+  "description": "Block distracting sites, set time limits, and keep your accountability partner in the loop.",
   "private": true,
   "version": "0.0.0",
   "type": "module",
