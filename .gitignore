@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 .output
+tab-limit-extension
 stats.html
 .env
 stats-*.json
