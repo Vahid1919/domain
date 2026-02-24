@@ -45,7 +45,6 @@ export interface TickState {
     usageCache: Record<string, UsageEntry>;
     limitedSitesCache: LimitedSite[];
     currentDomain: string | null;
-    windowFocused: boolean;
     activeTabId: number | null;
 }
 
@@ -61,9 +60,9 @@ export interface TickResult {
  * Returns the new state rather than calling chrome.tabs APIs.
  */
 export function tick(state: TickState): TickResult {
-    const { currentDomain, windowFocused, activeTabId } = state;
+    const { currentDomain, activeTabId } = state;
 
-    if (!currentDomain || !windowFocused || activeTabId === null) {
+    if (!currentDomain || activeTabId === null) {
         return {
             usedSeconds: 0,
             remainingSeconds: 0,

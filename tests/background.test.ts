@@ -179,16 +179,14 @@ describe("tick()", () => {
         overrides: Partial<{
             usedSeconds: number;
             currentDomain: string | null;
-            windowFocused: boolean;
             activeTabId: number | null;
         }> = {},
     ) {
-        const { usedSeconds = 0, currentDomain = "youtube.com", windowFocused = true, activeTabId = 1 } = overrides;
+        const { usedSeconds = 0, currentDomain = "youtube.com", activeTabId = 1 } = overrides;
         return {
             usageCache: { "youtube.com": { date: today, usedSeconds } },
             limitedSitesCache: LIMITED,
             currentDomain,
-            windowFocused,
             activeTabId,
         };
     }
@@ -204,13 +202,6 @@ describe("tick()", () => {
         const state = makeState({ usedSeconds: 10 });
         const result = tick(state);
         expect(result.remainingSeconds).toBe(49); // 60 - 11
-    });
-
-    it("does nothing when window is not focused", () => {
-        const state = makeState({ usedSeconds: 10, windowFocused: false });
-        const result = tick(state);
-        expect(result.usedSeconds).toBe(0);
-        expect(state.usageCache["youtube.com"].usedSeconds).toBe(10);
     });
 
     it("does nothing when activeTabId is null", () => {
@@ -268,7 +259,6 @@ describe("tick()", () => {
             usageCache: { "youtube.com": { date: "2020-01-01", usedSeconds: 9999 } },
             limitedSitesCache: LIMITED,
             currentDomain: "youtube.com",
-            windowFocused: true,
             activeTabId: 1,
         };
         const result = tick(state);

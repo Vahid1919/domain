@@ -95,54 +95,109 @@ function pauseTracking(): void {
 }
 
 // ── Tick (every second) ───────────────────────────────────────────────────────
-function onTick(): void {
-  if (!currentDomain || !windowFocused || activeTabId === null) return;
+async function onTick(): Promise<void> {
+  // ── Active tab ────────────────────────────────────────────────────────────
+  // Count whenever a limited site is the active tab, regardless of whether
+  // the Chrome window itself is in the foreground — so e.g. YouTube playing
+  // while the user is working in another app is still tracked.
+  if (currentDomain && activeTabId !== null) {
+    if (sessionStartAt === null) {
+      // Anchor the wall-clock session on first tick after SW wake-up.
+      beginTracking(currentDomain);
+    } else {
+      const site = findLimitedSite(currentDomain);
+      if (!site) {
+        pauseTracking();
+      } else {
+        // Elapsed is computed from wall-clock, so missed ticks never cause drift
+        const elapsed = Math.round((Date.now() - sessionStartAt) / 1000);
+        ensureUsageToday(currentDomain);
+        const usedSeconds = sessionBaseUsed + elapsed;
+        usageCache[currentDomain].usedSeconds = usedSeconds;
 
-  // Session not started yet (e.g. SW just woke up) — begin now
-  if (sessionStartAt === null) {
-    beginTracking(currentDomain);
+        const limitSeconds = site.limitMinutes * 60;
+        const remainingSeconds = Math.max(0, limitSeconds - usedSeconds);
+
+        chrome.tabs
+          .sendMessage(activeTabId, {
+            type: "TIME_UPDATE",
+            domain: currentDomain,
+            usedSeconds,
+            limitSeconds,
+            remainingSeconds,
+          })
+          .catch(() => {});
+
+        // Flush every 10 s to keep storage fresh without hammering disk
+        if (Date.now() - lastFlushAt > 10_000) void flushCache();
+
+        if (remainingSeconds <= 0) {
+          const domain = currentDomain;
+          const tabId = activeTabId;
+          pauseTracking();
+          void flushCache();
+          void dispatchEmail("limit_exceeded", domain);
+          void chrome.tabs.update(tabId, {
+            url: chrome.runtime.getURL(
+              "blocked.html?domain=" + encodeURIComponent(domain) + "&type=limit",
+            ),
+          });
+        }
+      }
+    }
+  }
+
+  // ── Audible background tabs ───────────────────────────────────────────────
+  // Also count tabs actively playing audio/video even when not the active tab
+  // — e.g. YouTube in a pinned background tab while the user browses elsewhere
+  // or works in another app entirely.
+  let audibleTabs: chrome.tabs.Tab[];
+  try {
+    audibleTabs = await chrome.tabs.query({ audible: true });
+  } catch {
     return;
   }
 
-  const site = findLimitedSite(currentDomain);
-  if (!site) {
-    pauseTracking();
-    return;
-  }
+  for (const tab of audibleTabs) {
+    // Skip the active tab — already handled above
+    if (!tab.id || tab.id === activeTabId || !tab.url) continue;
 
-  // Elapsed is computed from wall-clock, so missed ticks never cause drift
-  const elapsed = Math.round((Date.now() - sessionStartAt) / 1000);
-  ensureUsageToday(currentDomain);
-  const usedSeconds = sessionBaseUsed + elapsed;
-  usageCache[currentDomain].usedSeconds = usedSeconds;
+    const domain = extractDomain(tab.url);
+    if (!domain) continue;
 
-  const limitSeconds = site.limitMinutes * 60;
-  const remainingSeconds = Math.max(0, limitSeconds - usedSeconds);
+    const site = findLimitedSite(domain);
+    if (!site) continue;
 
-  chrome.tabs
-    .sendMessage(activeTabId, {
-      type: "TIME_UPDATE",
-      domain: currentDomain,
-      usedSeconds,
-      limitSeconds,
-      remainingSeconds,
-    })
-    .catch(() => {});
+    ensureUsageToday(domain);
+    usageCache[domain].usedSeconds += 1;
 
-  // Flush every 10 s to keep storage fresh without hammering disk
-  if (Date.now() - lastFlushAt > 10_000) void flushCache();
+    const limitSeconds = site.limitMinutes * 60;
+    const usedSeconds = usageCache[domain].usedSeconds;
+    const remainingSeconds = Math.max(0, limitSeconds - usedSeconds);
 
-  if (remainingSeconds <= 0) {
-    const domain = currentDomain;
-    const tabId = activeTabId;
-    pauseTracking();
-    void flushCache();
-    void dispatchEmail("limit_exceeded", domain);
-    void chrome.tabs.update(tabId, {
-      url: chrome.runtime.getURL(
-        "blocked.html?domain=" + encodeURIComponent(domain) + "&type=limit",
-      ),
-    });
+    chrome.tabs
+      .sendMessage(tab.id, {
+        type: "TIME_UPDATE",
+        domain,
+        usedSeconds,
+        limitSeconds,
+        remainingSeconds,
+      })
+      .catch(() => {});
+
+    if (Date.now() - lastFlushAt > 10_000) void flushCache();
+
+    if (remainingSeconds <= 0) {
+      const d = domain;
+      const tid = tab.id;
+      void flushCache();
+      void dispatchEmail("limit_exceeded", d);
+      void chrome.tabs.update(tid, {
+        url: chrome.runtime.getURL(
+          "blocked.html?domain=" + encodeURIComponent(d) + "&type=limit",
+        ),
+      });
+    }
   }
 }
 
@@ -208,14 +263,9 @@ async function updateActiveTab(tabId: number, url?: string): Promise<void> {
     return;
   }
 
-  // Begin session if window is focused, otherwise just track domain for later
-  if (windowFocused) {
-    beginTracking(domain);
-  } else {
-    currentDomain = domain;
-    sessionStartAt = null;
-    sessionBaseUsed = usedSeconds;
-  }
+  // Always begin tracking when a limited site becomes active.
+  // Counting is not gated on window focus — handled in onTick.
+  beginTracking(domain);
 
   // Push current state to the content script immediately
   chrome.tabs
@@ -272,21 +322,11 @@ export default defineBackground(async () => {
   });
 
   chrome.windows.onFocusChanged.addListener((windowId) => {
-    const nowFocused = windowId !== chrome.windows.WINDOW_ID_NONE;
-    if (nowFocused === windowFocused) return;
-
-    if (!nowFocused) {
-      // Losing focus: snapshot elapsed and pause
-      snapshotSession();
-      sessionStartAt = null;
-      void flushCache();
-    } else if (currentDomain) {
-      // Gaining focus: resume session from current usage
-      sessionBaseUsed = usageCache[currentDomain]?.usedSeconds ?? 0;
-      sessionStartAt = Date.now();
-    }
-
-    windowFocused = nowFocused;
+    windowFocused = windowId !== chrome.windows.WINDOW_ID_NONE;
+    // Tracking is no longer paused on blur — active tabs and audible background
+    // tabs count regardless of window focus. We still flush on blur to keep
+    // storage current.
+    if (!windowFocused) void flushCache();
   });
 
   chrome.storage.onChanged.addListener((changes) => {
@@ -387,5 +427,5 @@ export default defineBackground(async () => {
     if (alarm.name === "flush") void flushCache();
   });
 
-  setInterval(onTick, 1000);
+  setInterval(() => { void onTick(); }, 1000);
 });
