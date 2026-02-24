@@ -23,7 +23,6 @@ export function SiteFavicon({
     alignItems: "center",
     justifyContent: "center",
     borderRadius: "3px",
-    boxShadow: "0 0 0 1.5px #22d3ee99",
     flexShrink: 0,
   };
 
