@@ -14,8 +14,9 @@ export default defineContentScript({
                 port = chrome.runtime.connect({ name: "keepalive" });
                 port.onDisconnect.addListener(() => {
                     port = null;
-                    // Re-connect after a short delay if the page is still open
                     setTimeout(connectPort, 2000);
+                    // Re-request state after reconnect — SW may have restarted
+                    setTimeout(requestState, 2200);
                 });
             } catch {
                 /* extension may have been reloaded */
@@ -27,45 +28,40 @@ export default defineContentScript({
         let toastHost: HTMLElement | null = null;
         let progressBar: HTMLDivElement | null = null;
         let timeText: HTMLSpanElement | null = null;
-        let pctText: HTMLSpanElement | null = null;
-        let domainEl: HTMLSpanElement | null = null;
         let dotEl: HTMLSpanElement | null = null;
         let dismissed = false;
-        let localRemaining = 0;
-        let localLimitSeconds = 0;
-        let localUsedSeconds = 0;
+        // Wall-clock sync anchor — drift-proof local interpolation
+        let localSyncAt = 0;       // Date.now() at last real TIME_UPDATE
+        let localRemAtSync = 0;    // remainingSeconds at that moment
+        let localLimitSeconds = 0; // limitSeconds from last sync — needed to compute % used for the progress bar
         let localInterval: ReturnType<typeof setInterval> | null = null;
+        let lastUpdateAt = 0;      // for stale-state detection
 
         // ── Helpers ────────────────────────────────────────────────────────────
         function fmt(secs: number): string {
-            if (secs <= 0) return "0s";
+            if (secs <= 0) return "0:00";
             const h = Math.floor(secs / 3600);
             const m = Math.floor((secs % 3600) / 60);
             const s = secs % 60;
-            if (h > 0) return `${h}h ${m}m`;
-            if (m > 0) return `${m}m ${s}s`;
-            return `${s}s`;
+            if (h > 0) return `${h}:${String(m).padStart(2, "0")}h`;
+            return `${m}:${String(s).padStart(2, "0")}`;
+        }
+
+        function fmtLimit(secs: number): string {
+            if (secs <= 0) return "0m";
+            const h = Math.floor(secs / 3600);
+            const m = Math.ceil((secs % 3600) / 60);
+            if (h > 0) return m > 0 ? `${h}h${m}m` : `${h}h`;
+            return `${m}m`;
         }
 
         type Theme = { accent: string; glow: string; pulse: boolean };
-        function theme(pct: number): Theme {
-            if (pct >= 95)
-                return {
-                    accent: "#ef4444",
-                    glow: "rgba(239,68,68,0.35)",
-                    pulse: true,
-                };
-            if (pct >= 80)
-                return {
-                    accent: "#f97316",
-                    glow: "rgba(249,115,22,0.25)",
-                    pulse: false,
-                };
-            return {
-                accent: "#3b82f6",
-                glow: "rgba(59,130,246,0.2)",
-                pulse: false,
-            };
+        function theme(pctUsed: number): Theme {
+            if (pctUsed >= 95)
+                return { accent: "#22d3ee", glow: "rgba(34,211,238,0.38)", pulse: true };
+            if (pctUsed >= 80)
+                return { accent: "#f59e0b", glow: "rgba(245,158,11,0.28)", pulse: false };
+            return { accent: "#d4d4d8", glow: "rgba(212,212,216,0.18)", pulse: false };
         }
 
         // ── Build shadow DOM toast ─────────────────────────────────────────────
@@ -73,125 +69,95 @@ export default defineContentScript({
             const host = document.createElement("div");
             host.id = "__killswitch_toast__";
             host.style.cssText =
-                "all:initial;position:fixed;bottom:24px;right:24px;z-index:2147483647;pointer-events:none;";
+                "all:initial;position:fixed;top:12px;right:12px;z-index:2147483647;pointer-events:none;";
 
             const shadow = host.attachShadow({ mode: "open" });
 
             const style = document.createElement("style");
             style.textContent = `
         @keyframes slideIn {
-          from { opacity:0; transform:translateY(8px) scale(0.97); }
-          to   { opacity:1; transform:translateY(0)  scale(1); }
+          from { opacity:0; transform:translateY(-6px) scale(0.96); }
+          to   { opacity:1; transform:translateY(0)   scale(1); }
         }
         @keyframes pulse {
           0%,100% { opacity:1; }
-          50%      { opacity:0.35; }
+          50%      { opacity:0.3; }
         }
         .toast {
           pointer-events: auto;
-          width: 268px;
-          background: rgba(9,11,20,0.94);
-          backdrop-filter: blur(14px);
-          -webkit-backdrop-filter: blur(14px);
-          border: 1px solid rgba(255,255,255,0.08);
-          border-radius: 14px;
-          padding: 13px 14px 11px;
+          width: 110px;
+          background: rgba(9,11,20,0.88);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(34,211,238,0.13);
+          border-radius: 8px;
           font-family: -apple-system,BlinkMacSystemFont,'Inter','Segoe UI',sans-serif;
-          font-size: 13px;
           color: #e2e8f0;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.55);
-          animation: slideIn 0.22s cubic-bezier(0.34,1.56,0.64,1);
-          transition: box-shadow 0.35s;
+          box-shadow: 0 4px 18px rgba(0,0,0,0.45);
+          animation: slideIn 0.16s cubic-bezier(0.22,1,0.36,1);
+          transition: box-shadow 0.3s;
           user-select: none;
-        }
-        .header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 9px;
-        }
-        .title {
-          display: flex;
-          align-items: center;
-          gap: 7px;
-          font-weight: 600;
-          font-size: 13px;
-          letter-spacing: -0.01em;
-          min-width: 0;
-        }
-        .domain {
           overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
+        }
+        .row {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 5px 6px 4px;
         }
         .dot {
-          width: 7px;
-          height: 7px;
+          width: 5px; height: 5px;
           border-radius: 50%;
           flex-shrink: 0;
           transition: background 0.3s;
         }
-        .dot.pulse { animation: pulse 1s infinite; }
-        .close {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: rgba(255,255,255,0.3);
-          font-size: 14px;
-          line-height: 1;
-          padding: 3px 5px;
-          border-radius: 5px;
-          transition: color 0.15s, background 0.15s;
+        .dot.pulse { animation: pulse 1.2s infinite; }
+        .time {
+          flex: 1;
+          font-size: 10px;
+          font-weight: 600;
+          white-space: nowrap;
+          transition: color 0.3s;
+        }
+        .sep { font-size: 10px; color: rgba(255,255,255,0.2); }
+        .limit {
+          font-size: 10px;
+          font-weight: 400;
+          color: rgba(255,255,255,0.35);
           flex-shrink: 0;
         }
-        .close:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.07); }
-        .track {
-          height: 5px;
-          background: rgba(255,255,255,0.09);
-          border-radius: 99px;
-          overflow: hidden;
-          margin-bottom: 8px;
+        .close {
+          background: none; border: none; cursor: pointer;
+          color: rgba(255,255,255,0.25);
+          font-size: 10px; line-height: 1;
+          padding: 2px 3px; border-radius: 4px;
+          transition: color 0.15s, background 0.15s;
+          flex-shrink: 0; margin-left: 1px;
         }
-        .bar {
-          height: 100%;
-          border-radius: 99px;
-          transition: width 0.9s ease, background 0.3s;
-        }
-        .footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .remaining {
-          font-size: 12px;
-          font-weight: 500;
-          color: #e2e8f0;
-        }
-        .pct {
-          font-size: 11px;
-          color: rgba(255,255,255,0.38);
-        }
+        .close:hover { color: rgba(255,255,255,0.7); background: rgba(255,255,255,0.07); }
+        .track { height: 2px; background: rgba(255,255,255,0.07); }
+        .bar { height: 100%; transition: width 0.9s ease, background 0.3s; }
       `;
             shadow.appendChild(style);
 
             const card = document.createElement("div");
             card.className = "toast";
 
-            // Header
-            const header = document.createElement("div");
-            header.className = "header";
-
-            const titleEl = document.createElement("div");
-            titleEl.className = "title";
+            const row = document.createElement("div");
+            row.className = "row";
 
             dotEl = document.createElement("span");
             dotEl.className = "dot";
 
-            domainEl = document.createElement("span");
-            domainEl.className = "domain";
+            timeText = document.createElement("span");
+            timeText.className = "time";
 
-            titleEl.appendChild(dotEl);
-            titleEl.appendChild(domainEl);
+            const sepEl = document.createElement("span");
+            sepEl.className = "sep";
+            sepEl.textContent = "/";
+
+            const limitText = document.createElement("span");
+            limitText.className = "limit";
 
             const closeBtn = document.createElement("button");
             closeBtn.className = "close";
@@ -203,10 +169,12 @@ export default defineContentScript({
                 toastHost = null;
             };
 
-            header.appendChild(titleEl);
-            header.appendChild(closeBtn);
+            row.appendChild(dotEl);
+            row.appendChild(timeText);
+            row.appendChild(sepEl);
+            row.appendChild(limitText);
+            row.appendChild(closeBtn);
 
-            // Progress track
             const track = document.createElement("div");
             track.className = "track";
             progressBar = document.createElement("div");
@@ -214,22 +182,8 @@ export default defineContentScript({
             progressBar.style.width = "0%";
             track.appendChild(progressBar);
 
-            // Footer
-            const footer = document.createElement("div");
-            footer.className = "footer";
-
-            timeText = document.createElement("span");
-            timeText.className = "remaining";
-
-            pctText = document.createElement("span");
-            pctText.className = "pct";
-
-            footer.appendChild(timeText);
-            footer.appendChild(pctText);
-
-            card.appendChild(header);
+            card.appendChild(row);
             card.appendChild(track);
-            card.appendChild(footer);
             shadow.appendChild(card);
 
             toastHost = host;
@@ -241,27 +195,38 @@ export default defineContentScript({
             usedSeconds: number,
             limitSeconds: number,
             remainingSeconds: number,
-            domain?: string,
         ) {
             const pct = Math.min(100, (usedSeconds / limitSeconds) * 100);
             const t = theme(pct);
 
-            if (domain && domainEl) domainEl.textContent = domain;
             if (progressBar) {
                 progressBar.style.width = `${pct.toFixed(1)}%`;
                 progressBar.style.background = t.accent;
             }
-            if (timeText) timeText.textContent = `${fmt(remainingSeconds)} left`;
-            if (pctText) pctText.textContent = `${Math.round(pct)}%`;
+            // Show remaining time — more actionable than elapsed
+            if (timeText) {
+                timeText.textContent = fmt(remainingSeconds);
+                timeText.style.color = t.accent;
+            }
+            const limitEl = toastHost?.shadowRoot?.querySelector<HTMLElement>(".limit");
+            if (limitEl) limitEl.textContent = fmtLimit(limitSeconds);
             if (dotEl) {
                 dotEl.style.background = t.accent;
                 dotEl.className = `dot${t.pulse ? " pulse" : ""}`;
             }
-            // Update glow based on urgency
             const card = toastHost?.shadowRoot?.querySelector<HTMLDivElement>(".toast");
             if (card) {
-                card.style.boxShadow = `0 8px 32px rgba(0,0,0,0.55), 0 0 24px ${t.glow}`;
+                card.style.boxShadow = `0 4px 20px rgba(0,0,0,0.55), 0 0 16px ${t.glow}`;
             }
+        }
+
+        // ── Request current state from SW ─────────────────────────────────────
+        function requestState() {
+            if (dismissed) return;
+            chrome.runtime.sendMessage({ type: "GET_CURRENT_STATE" }, (response) => {
+                if (chrome.runtime.lastError || !response?.domain) return;
+                handleUpdate(response);
+            });
         }
 
         // ── Handle an incoming time update ────────────────────────────────────
@@ -273,29 +238,26 @@ export default defineContentScript({
         }) {
             if (dismissed) return;
 
-            localRemaining = data.remainingSeconds;
+            // Anchor wall-clock sync point — local interval interpolates from here
+            localSyncAt = Date.now();
+            localRemAtSync = data.remainingSeconds;
             localLimitSeconds = data.limitSeconds;
-            localUsedSeconds = data.usedSeconds;
+            lastUpdateAt = Date.now();
 
             if (!toastHost) buildToast();
+            applyToDOM(data.usedSeconds, data.limitSeconds, data.remainingSeconds);
 
-            applyToDOM(
-                data.usedSeconds,
-                data.limitSeconds,
-                data.remainingSeconds,
-                data.domain,
-            );
-
-            // Reset local interval so it stays in sync with background ticks
+            // Restart drift-correcting local interval
             if (localInterval) clearInterval(localInterval);
             localInterval = setInterval(() => {
-                if (localRemaining <= 0) {
+                const elapsed = Math.round((Date.now() - localSyncAt) / 1000);
+                const remaining = Math.max(0, localRemAtSync - elapsed);
+                if (remaining <= 0) {
                     clearInterval(localInterval!);
                     return;
                 }
-                localRemaining -= 1;
-                localUsedSeconds += 1;
-                applyToDOM(localUsedSeconds, localLimitSeconds, localRemaining);
+                const used = localLimitSeconds - remaining;
+                applyToDOM(used, localLimitSeconds, remaining);
             }, 1000);
         }
 
@@ -312,9 +274,17 @@ export default defineContentScript({
         });
 
         // ── Request initial state ─────────────────────────────────────────────
-        chrome.runtime.sendMessage({ type: "GET_CURRENT_STATE" }, (response) => {
-            if (chrome.runtime.lastError || !response?.domain) return;
-            handleUpdate(response);
+        requestState();
+
+        // ── Re-sync when tab becomes visible (switch back, unminimize) ────────
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) requestState();
         });
+
+        // ── Periodic re-sync: catches SW restart / stale toast ────────────────
+        setInterval(() => {
+            if (dismissed || !toastHost) return;
+            if (Date.now() - lastUpdateAt > 5_000) requestState();
+        }, 5_000);
     },
 });
