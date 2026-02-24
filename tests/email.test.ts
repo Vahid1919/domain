@@ -62,7 +62,10 @@ describe("sendEmail() — guard clauses", () => {
     });
 
     it("still returns error for a disabled toggle even if email is set", async () => {
-        const s: AccountabilitySettings = { ...ALL_ENABLED, notifyOnLimitRemoved: false };
+        const s: AccountabilitySettings = {
+            ...ALL_ENABLED,
+            notifyOnLimitRemoved: false,
+        };
         const result = await sendEmail(s, "limit_removed", DOMAIN);
         expect(result.ok).toBe(false);
         expect(fetch).not.toHaveBeenCalled();
@@ -73,7 +76,10 @@ describe("sendEmail() — guard clauses", () => {
 
 describe("sendEmail() — fetch payload", () => {
     beforeEach(() => {
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => "" }));
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({ ok: true, text: async () => "" }),
+        );
     });
 
     const events: EmailEvent[] = [
@@ -99,7 +105,9 @@ describe("sendEmail() — fetch payload", () => {
 
     it("passes service_id, template_id, user_id from build-time env vars", async () => {
         await sendEmail(ALL_ENABLED, "limit_added", DOMAIN);
-        const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+        const body = JSON.parse(
+            (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
+        );
         expect(body.service_id).toBe("service_test");
         expect(body.template_id).toBe("template_test");
         expect(body.user_id).toBe("pubkey_test");
@@ -107,13 +115,17 @@ describe("sendEmail() — fetch payload", () => {
 
     it("passes to_email from settings.email", async () => {
         await sendEmail(ALL_ENABLED, "limit_added", DOMAIN);
-        const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+        const body = JSON.parse(
+            (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
+        );
         expect(body.template_params.to_email).toBe("friend@example.com");
     });
 
     it("includes a non-empty title, subject and message in template_params", async () => {
         await sendEmail(ALL_ENABLED, "limit_added", DOMAIN);
-        const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+        const body = JSON.parse(
+            (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
+        );
         expect(body.template_params.title).toBeTruthy();
         expect(body.template_params.subject).toBeTruthy();
         expect(body.template_params.message).toBeTruthy();
@@ -124,7 +136,10 @@ describe("sendEmail() — fetch payload", () => {
 
 describe("sendEmail() — email content", () => {
     beforeEach(() => {
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => "" }));
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({ ok: true, text: async () => "" }),
+        );
     });
 
     async function getBody(event: EmailEvent, domain: string) {
@@ -134,7 +149,10 @@ describe("sendEmail() — email content", () => {
     }
 
     it("limit_added — subject contains the domain and a positive tone emoji", async () => {
-        const { title, subject, message } = await getBody("limit_added", "youtube.com");
+        const { title, subject, message } = await getBody(
+            "limit_added",
+            "youtube.com",
+        );
         expect(subject).toContain("youtube.com");
         expect(subject).toMatch(/🎯/);
         expect(subject).toContain("Vahid");
@@ -146,7 +164,10 @@ describe("sendEmail() — email content", () => {
     });
 
     it("limit_removed — subject contains the domain and a cautionary tone", async () => {
-        const { title, subject, message } = await getBody("limit_removed", "youtube.com");
+        const { title, subject, message } = await getBody(
+            "limit_removed",
+            "youtube.com",
+        );
         expect(subject).toContain("youtube.com");
         expect(subject).toMatch(/😬/);
         expect(subject).toContain("Vahid");
@@ -157,7 +178,10 @@ describe("sendEmail() — email content", () => {
     });
 
     it("block_added — subject contains the domain and a positive tone emoji", async () => {
-        const { title, subject, message } = await getBody("block_added", "reddit.com");
+        const { title, subject, message } = await getBody(
+            "block_added",
+            "reddit.com",
+        );
         expect(subject).toContain("reddit.com");
         expect(subject).toMatch(/🔒/);
         expect(subject).toContain("Vahid");
@@ -168,7 +192,10 @@ describe("sendEmail() — email content", () => {
     });
 
     it("block_removed — subject contains the domain and a warning emoji", async () => {
-        const { title, subject, message } = await getBody("block_removed", "reddit.com");
+        const { title, subject, message } = await getBody(
+            "block_removed",
+            "reddit.com",
+        );
         expect(subject).toContain("reddit.com");
         expect(subject).toMatch(/🚨/);
         expect(subject).toContain("Vahid");
@@ -179,7 +206,10 @@ describe("sendEmail() — email content", () => {
     });
 
     it("limit_exceeded — subject contains the domain and a clock emoji", async () => {
-        const { title, subject, message } = await getBody("limit_exceeded", "twitter.com");
+        const { title, subject, message } = await getBody(
+            "limit_exceeded",
+            "twitter.com",
+        );
         expect(subject).toContain("twitter.com");
         expect(subject).toMatch(/⏰/);
         expect(subject).toContain("Vahid");
@@ -192,8 +222,13 @@ describe("sendEmail() — email content", () => {
     it("falls back to 'your Buddy' when name is empty", async () => {
         const noName: AccountabilitySettings = { ...ALL_ENABLED, name: "" };
         await sendEmail(noName, "limit_added", "github.com");
-        const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
-        const { subject, message } = body.template_params as { subject: string; message: string };
+        const body = JSON.parse(
+            (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
+        );
+        const { subject, message } = body.template_params as {
+            subject: string;
+            message: string;
+        };
         expect(subject).toContain("github.com");
         expect(subject).toContain("your Buddy");
         expect(message).toContain("your Buddy");
@@ -201,13 +236,19 @@ describe("sendEmail() — email content", () => {
 
     it("passes name in template_params", async () => {
         await sendEmail(ALL_ENABLED, "limit_added", DOMAIN);
-        const body = JSON.parse((fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body);
+        const body = JSON.parse(
+            (fetch as ReturnType<typeof vi.fn>).mock.calls[0][1].body,
+        );
         expect(body.template_params.name).toBe("Vahid");
     });
 
     it("each event produces a unique subject for the same domain", async () => {
         const events: EmailEvent[] = [
-            "limit_added", "limit_removed", "block_added", "block_removed", "limit_exceeded",
+            "limit_added",
+            "limit_removed",
+            "block_added",
+            "block_removed",
+            "limit_exceeded",
         ];
         const subjects = new Set<string>();
         for (const event of events) {
@@ -230,7 +271,13 @@ describe("sendEmail() — fetch error handling", () => {
     it("returns { ok: false, error } when fetch returns a non-ok response", async () => {
         vi.stubGlobal(
             "fetch",
-            vi.fn().mockResolvedValue({ ok: false, status: 422, text: async () => "Bad request" }),
+            vi
+                .fn()
+                .mockResolvedValue({
+                    ok: false,
+                    status: 422,
+                    text: async () => "Bad request",
+                }),
         );
         const result = await sendEmail(ALL_ENABLED, "limit_added", DOMAIN);
         expect(result.ok).toBe(false);
@@ -239,21 +286,30 @@ describe("sendEmail() — fetch error handling", () => {
     });
 
     it("returns { ok: false, error } when fetch throws a network error", async () => {
-        vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Network failure")));
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockRejectedValue(new Error("Network failure")),
+        );
         const result = await sendEmail(ALL_ENABLED, "limit_added", DOMAIN);
         expect(result.ok).toBe(false);
         expect(result.error).toContain("Network failure");
     });
 
     it("returns { ok: true } on a 200 response", async () => {
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => "" }));
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({ ok: true, text: async () => "" }),
+        );
         const result = await sendEmail(ALL_ENABLED, "limit_added", DOMAIN);
         expect(result.ok).toBe(true);
         expect(result.error).toBeUndefined();
     });
 
     it("each notify toggle independently gates sending", async () => {
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => "" }));
+        vi.stubGlobal(
+            "fetch",
+            vi.fn().mockResolvedValue({ ok: true, text: async () => "" }),
+        );
         const toggleMap: Record<EmailEvent, keyof AccountabilitySettings> = {
             limit_added: "notifyOnLimitAdded",
             limit_removed: "notifyOnLimitRemoved",
@@ -261,12 +317,20 @@ describe("sendEmail() — fetch error handling", () => {
             block_removed: "notifyOnBlockRemoved",
             limit_exceeded: "notifyOnLimitExceeded",
         };
-        for (const [event, key] of Object.entries(toggleMap) as [EmailEvent, keyof AccountabilitySettings][]) {
+        for (const [event, key] of Object.entries(toggleMap) as [
+            EmailEvent,
+            keyof AccountabilitySettings,
+        ][]) {
             vi.clearAllMocks();
             const s = { ...ALL_ENABLED, [key]: false };
             const result = await sendEmail(s, event, DOMAIN);
-            expect(result.ok, `${event} should be blocked when ${key}=false`).toBe(false);
-            expect(fetch, `fetch should not be called for disabled ${event}`).not.toHaveBeenCalled();
+            expect(result.ok, `${event} should be blocked when ${key}=false`).toBe(
+                false,
+            );
+            expect(
+                fetch,
+                `fetch should not be called for disabled ${event}`,
+            ).not.toHaveBeenCalled();
         }
     });
 });
