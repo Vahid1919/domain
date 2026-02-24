@@ -1,4 +1,4 @@
-# Tab Limit
+# Domain
 
 A browser extension for managing site access and screen time. Block specific domains, set per-domain daily time budgets, and optionally notify a contact when limits are changed — all without an account or a backend.
 
