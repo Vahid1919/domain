@@ -5,7 +5,8 @@ export type EmailEvent =
     | "limit_removed"
     | "block_added"
     | "block_removed"
-    | "limit_exceeded";
+    | "limit_exceeded"
+    | "limit_extended";
 
 const eventNotifyKey: Record<
     EmailEvent,
@@ -16,6 +17,7 @@ const eventNotifyKey: Record<
         | "notifyOnBlockAdded"
         | "notifyOnBlockRemoved"
         | "notifyOnLimitExceeded"
+        | "notifyOnLimitExtended"
     >
 > = {
     limit_added: "notifyOnLimitAdded",
@@ -23,6 +25,7 @@ const eventNotifyKey: Record<
     block_added: "notifyOnBlockAdded",
     block_removed: "notifyOnBlockRemoved",
     limit_exceeded: "notifyOnLimitExceeded",
+    limit_extended: "notifyOnLimitExtended",
 };
 
 function getEmailContent(
@@ -35,36 +38,43 @@ function getEmailContent(
         case "limit_added":
             return {
                 title: "Time Limit Set",
-                subject: `🎯 ${n} set a time limit for ${domain} — nice work!`,
-                message: `Great news!\n\n${n} just set a daily time limit for ${domain}. This is a genuinely powerful move — taking control of your attention is one of the most impactful things you can do for your goals.\n\n${n}'s future self is already proud. Keep building those habits. 💪`,
+                subject: `🎯 ${n} set a time limit for ${domain}`,
+                message: `${n} set a daily time limit for ${domain}. Holding them accountable is now your job. Good luck. 💪`,
             };
 
         case "limit_removed":
             return {
                 title: "Time Limit Removed",
                 subject: `😬 ${n} removed the time limit for ${domain}`,
-                message: `Heads up — ${n} quietly removed the time limit for ${domain}.\n\nNo judgment here... but there was almost certainly a reason it was set in the first place. Hopefully this is a conscious, deliberate choice and not just a fleeting moment of weakness. ${n}'s goals are patient, but they are watching. Just saying. 👀`,
+                message: `${n} removed their time limit for ${domain}. The internet wins again. 📺`,
             };
 
         case "block_added":
             return {
                 title: "Site Blocked",
-                subject: `🔒 ${n} blocked ${domain} for good — respect.`,
-                message: `Excellent discipline!\n\n${n} has completely blocked ${domain}. That's not a small thing — it takes real self-awareness to recognize a distraction and actually do something about it.\n\nThe version of ${n} that made this call is the version worth listening to. Stay the course. 🚀`,
+                subject: `🔒 ${n} blocked ${domain}`,
+                message: `${n} blocked ${domain} completely. Apparently it had it coming. 🚫`,
             };
 
         case "block_removed":
             return {
                 title: "Site Unblocked",
-                subject: `🚨 ${n} just unblocked ${domain}`,
-                message: `Well... ${n} just unblocked ${domain}.\n\nWe're not here to judge — truly. But the fact that it was blocked in the first place is worth remembering. There was a reason. Hopefully this is an intentional, considered decision and not temptation quietly winning out.\n\nNo pressure. We believe in ${n}. Mostly. 😬`,
+                subject: `🚨 ${n} unblocked ${domain}`,
+                message: `${n} just unblocked ${domain}. Go make fun of them or something. 😂`,
             };
 
         case "limit_exceeded":
             return {
                 title: "Daily Limit Hit",
-                subject: `⏰ ${n} hit the daily limit for ${domain}`,
-                message: `Time's up — ${n} hit the daily limit on ${domain} for today.\n\nThe site is now blocked until midnight. We're not going to say "we told you so"... but the limit was set for a reason.\n\nHopefully those minutes were worth it. ${n}'s future self might have thoughts. See you at midnight! 🙈`,
+                subject: `⏰ ${n} has surpassed their limit for ${domain}`,
+                message: `${n} blew past their daily limit on ${domain}. Go make fun of them or something. 🙈`,
+            };
+
+        case "limit_extended":
+            return {
+                title: "Limit Extended",
+                subject: `⏩ ${n} extended their time limit for ${domain}`,
+                message: `${n} just gave themselves extra time on ${domain}. Accountability check — was that really necessary? 👀`,
             };
     }
 }
