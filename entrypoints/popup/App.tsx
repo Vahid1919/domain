@@ -62,7 +62,7 @@ function App() {
   const ActiveComponent = tabs.find((t) => t.value === activeTab)!.component;
 
   return (
-    <div className="w-110 bg-background text-foreground flex flex-col overflow-y-auto">
+    <div className="w-110 bg-background text-foreground flex flex-col relative" style={{ overflowY: "scroll" }}>
       {/* Header */}
       <div className="bg-card">
         <div className="px-5 pt-5 pb-4 relative">
@@ -73,7 +73,7 @@ function App() {
                 Domain
               </h1>
               <p className="text-xs text-muted-foreground mt-0.5 font-mono tracking-widest uppercase">
-                block sites &bull; time limits &bull; stay accountable
+                focus &bull; limits &bull; accountability
               </p>
               <div className="mt-2">
                 <AnimatePresence mode="wait" initial={false}>
