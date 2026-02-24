@@ -5,10 +5,10 @@ import {
   saveMotivationalSettings,
 } from "@/lib/storage";
 import type { MotivationalSettings } from "@/lib/storage";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Clock, Plus, Pencil, X, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { X, Plus, Check, Pencil, Clock } from "lucide-react";
 
 function formatMinutes(m: number): string {
   if (m < 60) return `${m}m`;
@@ -59,6 +59,7 @@ export default function BlockedApp() {
   const [extendStatus, setExtendStatus] = useState<
     "idle" | "loading" | "done" | "error"
   >("idle");
+  const [extendingMinutes, setExtendingMinutes] = useState<number | null>(null);
 
   const countdown = useCountdownToMidnight();
 
@@ -88,19 +89,20 @@ export default function BlockedApp() {
     setEditing(false);
   };
 
-  const handleExtend = async () => {
+  const handleExtend = async (minutes: number) => {
     setExtendStatus("loading");
+    setExtendingMinutes(minutes);
     const resp = await chrome.runtime.sendMessage({
       type: "EXTEND_LIMIT",
       domain,
-      minutes: 5,
+      minutes,
     });
     if (resp?.ok) {
       setExtendStatus("done");
-      // Go back to the previous page
       setTimeout(() => history.back(), 600);
     } else {
       setExtendStatus("error");
+      setExtendingMinutes(null);
       setTimeout(() => setExtendStatus("idle"), 2500);
     }
   };
@@ -117,7 +119,6 @@ export default function BlockedApp() {
         backgroundPosition: "center",
       }}
     >
-      {/* Hidden img to detect load errors */}
       {settings.imageUrl && (
         <img
           src={settings.imageUrl}
@@ -136,37 +137,37 @@ export default function BlockedApp() {
         className="absolute inset-0 opacity-[0.04]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(245,158,11,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(245,158,11,0.35) 1px, transparent 1px)",
+            "linear-gradient(rgba(34,211,238,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.25) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
         }}
       />
 
       {/* Card */}
-      <div className="relative z-10 w-full max-w-90 mx-4">
+      <div className="relative z-10 w-full max-w-sm mx-4">
         <div
           className="rounded-xl border p-7 text-center"
           style={{
             background: "oklch(0.12 0 0 / 92%)",
             borderColor: isPermanent
-              ? "oklch(0.63 0.22 22 / 30%)"
-              : "oklch(0.76 0.17 65 / 30%)",
+              ? "oklch(0.72 0.15 200 / 30%)"
+              : "oklch(0.78 0.14 200 / 30%)",
             boxShadow: isPermanent
-              ? "0 0 0 1px oklch(0.63 0.22 22 / 10%), 0 24px 64px oklch(0 0 0 / 65%)"
-              : "0 0 0 1px oklch(0.76 0.17 65 / 10%), 0 24px 64px oklch(0 0 0 / 65%), 0 0 50px oklch(0.76 0.17 65 / 12%)",
+              ? "0 0 0 1px oklch(0.72 0.15 200 / 10%), 0 24px 64px oklch(0 0 0 / 65%)"
+              : "0 0 0 1px oklch(0.78 0.14 200 / 10%), 0 24px 64px oklch(0 0 0 / 65%), 0 0 50px oklch(0.78 0.14 200 / 12%)",
             backdropFilter: "blur(20px)",
           }}
         >
-          {/* Status indicator — only shown for permanently blocked sites */}
+          {/* Icon — only for permanently blocked sites */}
           {isPermanent && (
             <div
               className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-5"
               style={{
-                background: "oklch(0.65 0.22 22 / 15%)",
-                border: "1px solid oklch(0.65 0.22 22 / 30%)",
+                background: "oklch(0.72 0.15 200 / 15%)",
+                border: "1px solid oklch(0.72 0.15 200 / 30%)",
               }}
             >
               <X
-                style={{ color: "oklch(0.75 0.22 22)" }}
+                style={{ color: "oklch(0.80 0.15 200)" }}
                 className="w-5 h-5"
                 strokeWidth={2.5}
               />
@@ -185,14 +186,14 @@ export default function BlockedApp() {
             className="font-pixel text-[13px] leading-relaxed mb-2"
             style={{
               color: isPermanent
-                ? "oklch(0.78 0.22 22)"
-                : "oklch(0.80 0.17 65)",
+                ? "oklch(0.78 0.15 200)"
+                : "oklch(0.82 0.14 200)",
               textShadow: isPermanent
-                ? "0 0 12px oklch(0.63 0.22 22 / 40%)"
-                : "0 0 14px oklch(0.76 0.17 65 / 45%)",
+                ? "0 0 12px oklch(0.72 0.15 200 / 45%)"
+                : "0 0 14px oklch(0.78 0.14 200 / 50%)",
             }}
           >
-            {isPermanent ? "BLOCKED" : "TIME'S UP"}
+            {isPermanent ? "BLOCKED" : "TIME\u2019S UP"}
           </h1>
 
           <p
@@ -212,7 +213,7 @@ export default function BlockedApp() {
               className="w-full text-left rounded-lg px-4 py-3 mb-5 group transition-colors cursor-pointer"
               style={{
                 background: "oklch(1 0 0 / 4%)",
-                border: "1px solid oklch(0.76 0.17 65 / 20%)",
+                border: "1px solid oklch(0.78 0.14 200 / 22%)",
               }}
               onClick={() => setEditing(true)}
             >
@@ -221,7 +222,7 @@ export default function BlockedApp() {
                 style={{ color: "oklch(0.60 0.01 60)" }}
               >
                 &ldquo;
-                {settings.text || "Add a note to keep yourself on track…"}
+                {settings.text || "Add a note to keep yourself on track\u2026"}
                 &rdquo;
               </p>
               <p
@@ -251,7 +252,7 @@ export default function BlockedApp() {
                   className="w-full rounded-md px-3 py-2 text-sm resize-none focus:outline-none transition font-mono"
                   style={{
                     background: "oklch(1 0 0 / 8%)",
-                    border: "1px solid oklch(0.76 0.17 65 / 20%)",
+                    border: "1px solid oklch(0.78 0.14 200 / 22%)",
                     color: "oklch(0.88 0.005 60)",
                   }}
                   rows={3}
@@ -271,12 +272,12 @@ export default function BlockedApp() {
                   className="h-8 text-xs font-mono"
                   style={{
                     background: "oklch(1 0 0 / 8%)",
-                    borderColor: "oklch(0.76 0.17 65 / 20%)",
+                    borderColor: "oklch(0.78 0.14 200 / 22%)",
                     color: "oklch(0.88 0.005 60)",
                   }}
                   value={editImage}
                   onChange={(e) => setEditImage(e.target.value)}
-                  placeholder="https://…"
+                  placeholder="https://\u2026"
                 />
               </div>
               <div className="flex gap-2 justify-end">
@@ -298,53 +299,64 @@ export default function BlockedApp() {
 
           {/* Actions */}
           <div className="flex flex-col gap-2.5">
-            {/* +5 min button — only for timed limits */}
             {!isPermanent && (
-              <button
-                onClick={handleExtend}
-                disabled={extendStatus === "loading" || extendStatus === "done"}
-                className="w-full flex items-center justify-center gap-2 rounded-md py-2.5 text-sm font-semibold transition-all disabled:opacity-60"
-                style={{
-                  background:
-                    extendStatus === "done"
-                      ? "oklch(0.55 0.16 160 / 20%)"
-                      : "oklch(0.76 0.17 65 / 15%)",
-                  border:
-                    extendStatus === "done"
-                      ? "1px solid oklch(0.55 0.16 160 / 40%)"
-                      : "1px solid oklch(0.76 0.17 65 / 45%)",
-                  color:
-                    extendStatus === "done"
-                      ? "oklch(0.70 0.16 160)"
-                      : "oklch(0.82 0.17 65)",
-                }}
-              >
+              <>
+                {/* Extend buttons: +1m / +5m / +10m */}
                 {extendStatus === "done" ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Limit extended
-                  </>
+                  <div
+                    className="w-full flex items-center justify-center gap-2 rounded-md py-2.5 text-sm font-semibold"
+                    style={{
+                      background: "oklch(0.55 0.16 160 / 20%)",
+                      border: "1px solid oklch(0.55 0.16 160 / 40%)",
+                      color: "oklch(0.70 0.16 160)",
+                    }}
+                  >
+                    <Check className="w-4 h-4" />+{extendingMinutes}m extended
+                  </div>
                 ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    {extendStatus === "loading" ? "Extending…" : "+5 minutes"}
-                  </>
+                  <div className="flex gap-2">
+                    {([1, 5, 10] as const).map((mins) => (
+                      <button
+                        key={mins}
+                        onClick={() => handleExtend(mins)}
+                        disabled={extendStatus === "loading"}
+                        className="flex-1 flex items-center justify-center gap-1 rounded-md py-2.5 text-sm font-semibold transition-all disabled:opacity-60"
+                        style={{
+                          background: "oklch(0.78 0.14 200 / 15%)",
+                          border: "1px solid oklch(0.78 0.14 200 / 50%)",
+                          color:
+                            extendStatus === "loading" &&
+                            extendingMinutes === mins
+                              ? "oklch(0.84 0.14 200 / 60%)"
+                              : "oklch(0.84 0.14 200)",
+                        }}
+                      >
+                        {extendStatus === "loading" &&
+                        extendingMinutes === mins ? (
+                          "\u2026"
+                        ) : (
+                          <>
+                            <Plus className="w-3 h-3" />
+                            {mins}m
+                          </>
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 )}
-              </button>
-            )}
 
-            {/* Reset countdown */}
-            {!isPermanent && (
-              <div
-                className="flex items-center justify-center gap-1.5 text-xs font-mono"
-                style={{ color: "oklch(0.38 0.005 60)" }}
-              >
-                <Clock className="w-3 h-3" />
-                resets in&nbsp;
-                <span style={{ color: "oklch(0.72 0.12 65)" }}>
-                  {countdown}
-                </span>
-              </div>
+                {/* Resets at midnight */}
+                <div
+                  className="flex items-center justify-center gap-1.5 text-xs font-mono"
+                  style={{ color: "oklch(0.38 0.005 60)" }}
+                >
+                  <Clock className="w-3 h-3" />
+                  resets in&nbsp;
+                  <span style={{ color: "oklch(0.78 0.14 200)" }}>
+                    {countdown}
+                  </span>
+                </div>
+              </>
             )}
 
             {isPermanent && (
