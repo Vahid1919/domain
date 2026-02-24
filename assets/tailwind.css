@@ -308,7 +308,7 @@ body {
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: oklch(0.50 0.01 220 / 80%);
+    background: oklch(0.5 0.01 220 / 80%);
   }
 
   /* ── Hide number input spinners ────────────────────────────────────── */

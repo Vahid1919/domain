@@ -62,7 +62,10 @@ function App() {
   const ActiveComponent = tabs.find((t) => t.value === activeTab)!.component;
 
   return (
-    <div className="w-110 bg-background text-foreground flex flex-col relative" style={{ overflowY: "scroll" }}>
+    <div
+      className="w-110 bg-background text-foreground flex flex-col relative"
+      style={{ overflowY: "scroll" }}
+    >
       {/* Header */}
       <div className="bg-card">
         <div className="px-5 pt-5 pb-4 relative">
