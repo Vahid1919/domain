@@ -107,21 +107,27 @@ export default function BlockedApp() {
     }
   };
 
-  const hasBg = !!settings.imageUrl && !imageError;
+  // Fall back to a built-in wallpaper when the user hasn't set one yet.
+  // This is a display-only fallback — storage.imageUrl stays "" until the
+  // user explicitly saves their own URL.
+  const FALLBACK_IMAGE =
+    "https://4kwallpapers.com/images/walls/thumbs_3t/16769.jpg";
+  const resolvedImage = settings.imageUrl || FALLBACK_IMAGE;
+  const hasBg = !imageError;
 
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
       style={{
         background: hasBg ? undefined : "oklch(0.08 0 0)",
-        backgroundImage: hasBg ? `url(${settings.imageUrl})` : undefined,
+        backgroundImage: hasBg ? `url(${resolvedImage})` : undefined,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      {settings.imageUrl && (
+      {resolvedImage && (
         <img
-          src={settings.imageUrl}
+          src={resolvedImage}
           className="hidden"
           onError={() => setImageError(true)}
           onLoad={() => setImageError(false)}
@@ -130,7 +136,7 @@ export default function BlockedApp() {
       )}
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/75 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-[8px]" />
 
       {/* Pixel-grid texture */}
       <div
@@ -147,7 +153,7 @@ export default function BlockedApp() {
         <div
           className="rounded-xl border p-7 text-center"
           style={{
-            background: "oklch(0.12 0 0 / 92%)",
+            background: "oklch(0.12 0 0 / 55%)",
             borderColor: isPermanent
               ? "oklch(0.72 0.15 200 / 30%)"
               : "oklch(0.78 0.14 200 / 30%)",
