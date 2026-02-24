@@ -64,33 +64,37 @@ function makePng(w, h, rgba) {
 }
 
 // ── Pixel-art design (16×16 grid) ──────────────────────────────────────────
-// 0 = background  1 = primary (electric violet)  2 = highlight (cyan)
-
+// Infinite Void — Domain brand icon, concentric circle eye
+// 0 = BG (transparent)  1 = OUTER (electric cyan)  2 = IRIS (mid cyan)  3 = INNER (dark teal)
+// 4 = VOID (pure black pupil)        5 = SHIMMER (lavender highlight)
 const DESIGN = [
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-  [0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0],
-  [0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0],
-  [0, 1, 2, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 2, 1, 0],
-  [0, 1, 2, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 2, 1, 0],
-  [0, 1, 2, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 2, 1, 0],
-  [0, 1, 2, 0, 0, 0, 1, 2, 2, 1, 0, 0, 0, 2, 1, 0],
-  [0, 1, 2, 0, 0, 0, 1, 2, 2, 1, 0, 0, 0, 2, 1, 0],
-  [0, 1, 2, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 2, 1, 0],
-  [0, 1, 2, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 2, 1, 0],
-  [0, 1, 2, 0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 2, 1, 0],
-  [0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0],
-  [0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 0],
-  [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
-  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // row  0 — bg
+  [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0], // row  1 — outer ring top
+  [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0], // row  2 — iris
+  [0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0], // row  3 — iris
+  [0, 0, 1, 2, 2, 3, 3, 3, 3, 3, 3, 2, 2, 1, 0, 0], // row  4 — inner dark
+  [0, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 1, 0], // row  5 — inner dark
+  [0, 1, 2, 2, 3, 3, 5, 4, 4, 4, 3, 3, 2, 2, 1, 0], // row  6 — void + shimmer
+  [0, 1, 2, 2, 3, 3, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0], // row  7 — void center
+  [0, 1, 2, 2, 3, 3, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0], // row  8 — void center
+  [0, 1, 2, 2, 3, 3, 4, 4, 4, 4, 3, 3, 2, 2, 1, 0], // row  9 — void
+  [0, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 1, 0], // row 10 — inner dark
+  [0, 0, 1, 2, 2, 3, 3, 3, 3, 3, 3, 2, 2, 1, 0, 0], // row 11 — inner dark
+  [0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0], // row 12 — iris
+  [0, 0, 0, 0, 1, 2, 2, 2, 2, 2, 2, 1, 0, 0, 0, 0], // row 13 — iris
+  [0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0], // row 14 — outer ring bottom
+  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], // row 15 — bg
 ];
 
-// Colours (RGBA)
-const BG = [10, 10, 10, 255]; // near-black
-const FG = [220, 38, 38, 255]; // red  #DC2626
-const HI = [252, 165, 165, 255]; // light red  #FCA5A5
+// Colours (RGBA) — electric cyan palette, transparent bg
+const BG = [0, 0, 0, 0]; // transparent
+const OUTER = [34, 211, 238, 255]; // electric cyan    #22d3ee
+const IRIS = [8, 145, 178, 255]; // medium cyan      #0891b2
+const INNER = [14, 32, 55, 255]; // dark teal        #0e2037
+const VOID = [4, 8, 18, 255]; // near-black pupil
+const SHIMMER = [207, 250, 254, 255]; // ice cyan reflect #cffafe
 
-const PALETTE = [BG, FG, HI];
+const PALETTE = [BG, OUTER, IRIS, INNER, VOID, SHIMMER];
 
 function buildPixels(targetSize) {
   const base = DESIGN.length; // 16
@@ -115,18 +119,22 @@ function buildPixels(targetSize) {
 // ── Generate icons ─────────────────────────────────────────────────────────
 
 const sizes = [16, 32, 48, 96, 128];
-const outDir = resolve(__dirname, "../public/icon");
+const outDirs = [
+  resolve(__dirname, "../public/icon"),
+  resolve(__dirname, "../tab-limit-extension/icon"),
+];
 
-try {
-  mkdirSync(outDir, { recursive: true });
-} catch {}
-
-for (const size of sizes) {
-  const pixels = buildPixels(size);
-  const png = makePng(size, size, pixels);
-  const outPath = resolve(outDir, `${size}.png`);
-  writeFileSync(outPath, png);
-  console.log(`✓ ${size}px → ${outPath}`);
+for (const dir of outDirs) {
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch {}
+  for (const size of sizes) {
+    const pixels = buildPixels(size);
+    const png = makePng(size, size, pixels);
+    const outPath = resolve(dir, `${size}.png`);
+    writeFileSync(outPath, png);
+    console.log(`✓ ${size}px → ${outPath}`);
+  }
 }
 
 console.log("\n🎨 Pixel-art icons generated!");

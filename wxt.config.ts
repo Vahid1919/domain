@@ -8,8 +8,8 @@ export default defineConfig({
     plugins: [tailwindcss()],
   }),
   manifest: {
-    name: "Tab Limit",
-    description: "Block distracting sites, set time limits, and keep your accountability partner in the loop.",
+    name: "Domain",
+    description: "Expand your domain. Block distracting sites, set time limits, and keep your accountability partner in the loop.",
     permissions: ["storage", "tabs", "alarms"],
     host_permissions: ["<all_urls>"],
     commands: {
