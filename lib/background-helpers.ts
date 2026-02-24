@@ -4,7 +4,9 @@
  * The full background uses these internally; we test them in isolation here.
  */
 
-import type { LimitedSite, BlockedSite, UsageEntry } from "../lib/storage";
+import { getTodayString } from "./storage";
+import type { LimitedSite, BlockedSite, UsageEntry } from "./storage";
+export { getTodayString };
 
 export function extractDomain(url: string): string | null {
     try {
@@ -27,10 +29,6 @@ export function isBlockedSite(cache: BlockedSite[], domain: string): boolean {
     return cache.some(
         (s) => domain === s.domain || domain.endsWith("." + s.domain),
     );
-}
-
-export function getTodayString(): string {
-    return new Date().toISOString().split("T")[0];
 }
 
 export function ensureUsageToday(
