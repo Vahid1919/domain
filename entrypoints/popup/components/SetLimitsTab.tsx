@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { X, Clock, ChevronDown, ImageIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SiteFavicon } from "./SiteFavicon";
-import { cn } from "@/lib/utils";
+import { cn, normalizeDomain } from "@/lib/utils";
 import {
   getLimitedSites,
   saveLimitedSites,
@@ -96,7 +96,7 @@ export default function SetLimitsTab() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!domainInput || !minutesInput) return;
-    const domain = domainInput.trim().replace(/^www\./, "");
+    const domain = normalizeDomain(domainInput);
     const limitMinutes = parseInt(minutesInput, 10);
     if (isNaN(limitMinutes) || limitMinutes <= 0) return;
     if (sites.find((s) => s.domain === domain)) return;
@@ -124,6 +124,8 @@ export default function SetLimitsTab() {
     await saveLimitedSites(
       next.map(({ domain, limitMinutes }) => ({ domain, limitMinutes })),
     );
+    // Clear the timer so it starts from 0 if the limit is re-added later
+    chrome.runtime.sendMessage({ type: "RESET_USAGE", domain });
     chrome.runtime.sendMessage({
       type: "EMAIL_EVENT",
       event: "limit_removed",
@@ -157,7 +159,7 @@ export default function SetLimitsTab() {
       <CardContent className="flex flex-col gap-4">
         {/* ── Add form ─────────────────────────────────────────────────── */}
         <form className="flex w-full items-end gap-3" onSubmit={handleAdd}>
-          <span className="flex flex-col gap-1.5 w-full">
+          <span className="flex flex-col gap-1.5 flex-1 min-w-0">
             <Label htmlFor="limit-website">Website Domain</Label>
             <Input
               id="limit-website"
@@ -168,13 +170,13 @@ export default function SetLimitsTab() {
               className="text-base"
             />
           </span>
-          <span className="flex flex-col gap-1.5 w-full">
-            <Label htmlFor="limit-minutes">Limit (minutes)</Label>
+          <span className="flex flex-col gap-1.5 w-24 shrink-0">
+            <Label htmlFor="limit-minutes">Minutes</Label>
             <Input
               id="limit-minutes"
               type="number"
               min={1}
-              placeholder="e.g., 30"
+              placeholder="30"
               value={minutesInput}
               onChange={(e) => setMinutesInput(e.target.value)}
               className="text-base"
@@ -187,9 +189,9 @@ export default function SetLimitsTab() {
 
         {/* ── Active limits ─────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             Active Limits
-          </h2>
+          </h3>
 
           {sites.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-6 text-muted-foreground">
@@ -215,15 +217,16 @@ export default function SetLimitsTab() {
                   return (
                     <motion.li
                       key={site.domain}
-                      layout
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      layout="position"
+                      initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{
                         opacity: 0,
-                        x: -16,
-                        transition: { duration: 0.15 },
+                        x: -24,
+                        scale: 0.94,
+                        transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
                       }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      transition={{ duration: 0.3, ease: [0.34, 1.4, 0.64, 1] }}
                     >
                       <Card className="p-4 gap-3 flex flex-col shadow-none border border-border">
                         <div className="flex items-center justify-between">
@@ -236,7 +239,8 @@ export default function SetLimitsTab() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                            className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive btn-glow-ghost-destructive"
+                            aria-label={`Remove limit for ${site.domain}`}
                             onClick={() => handleRemove(site.domain)}
                           >
                             <X className="w-3.5 h-3.5" />
@@ -250,7 +254,7 @@ export default function SetLimitsTab() {
                             isExceeded
                               ? "*:data-[slot=progress-indicator]:bg-destructive"
                               : isNearLimit
-                                ? "*:data-[slot=progress-indicator]:bg-orange-500"
+                                ? "*:data-[slot=progress-indicator]:bg-amber-400"
                                 : "*:data-[slot=progress-indicator]:bg-primary",
                           )}
                         />
@@ -265,7 +269,7 @@ export default function SetLimitsTab() {
                               isExceeded
                                 ? "text-destructive font-medium"
                                 : isNearLimit
-                                  ? "text-orange-500 font-medium"
+                                  ? "text-amber-400 font-medium"
                                   : ""
                             }
                           >
@@ -288,10 +292,15 @@ export default function SetLimitsTab() {
 
         {/* ── Limit screen settings ──────────────────────────────────────── */}
         <div className="flex flex-col gap-3">
-          <button
+          <motion.button
             type="button"
             className="flex items-center justify-between w-full text-left group"
+            aria-expanded={showSettings}
+            aria-controls="limit-screen-settings"
             onClick={() => setShowSettings((v) => !v)}
+            whileHover={{ x: 2 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 22 }}
           >
             <span className="flex items-center gap-2 text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               <ImageIcon className="w-3.5 h-3.5 text-primary" />
@@ -305,10 +314,16 @@ export default function SetLimitsTab() {
                   : "text-muted-foreground",
               )}
             />
-          </button>
+          </motion.button>
 
           {showSettings && (
-            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-top-1 duration-150">
+            <motion.div
+              id="limit-screen-settings"
+              initial={{ opacity: 0, y: -10, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.26, ease: [0.34, 1.2, 0.64, 1] }}
+              className="flex flex-col gap-3"
+            >
               <p className="text-sm text-muted-foreground">
                 Background &amp; message shown on both blocked and limit-reached
                 pages.
@@ -360,7 +375,7 @@ export default function SetLimitsTab() {
                   Save
                 </Button>
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </CardContent>

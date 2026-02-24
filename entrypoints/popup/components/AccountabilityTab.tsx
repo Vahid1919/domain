@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Bell, BellOff, Mail, FlaskConical } from "lucide-react";
+import { Bell, BellOff, Mail } from "lucide-react";
 import {
   getAccountabilitySettings,
   saveAccountabilitySettings,
@@ -25,7 +25,8 @@ type NotifyKey =
   | "notifyOnLimitRemoved"
   | "notifyOnBlockAdded"
   | "notifyOnBlockRemoved"
-  | "notifyOnLimitExceeded";
+  | "notifyOnLimitExceeded"
+  | "notifyOnLimitExtended";
 
 const DEFAULT_SETTINGS: AccountabilitySettings = {
   name: "",
@@ -35,6 +36,7 @@ const DEFAULT_SETTINGS: AccountabilitySettings = {
   notifyOnBlockAdded: true,
   notifyOnBlockRemoved: true,
   notifyOnLimitExceeded: true,
+  notifyOnLimitExtended: true,
 };
 
 const EVENT_TOGGLES: {
@@ -58,6 +60,11 @@ const EVENT_TOGGLES: {
     description: "Email when a daily time limit is hit.",
   },
   {
+    key: "notifyOnLimitExtended",
+    label: "Limit Extended",
+    description: "Email when you give yourself extra time.",
+  },
+  {
     key: "notifyOnLimitRemoved",
     label: "Limit Removed",
     description: "Email when a time limit is deleted.",
@@ -73,10 +80,6 @@ export default function AccountabilityTab() {
   const [settings, setSettings] =
     useState<AccountabilitySettings>(DEFAULT_SETTINGS);
   const [saved, setSaved] = useState(false);
-  const [testStatus, setTestStatus] = useState<
-    "idle" | "sending" | "ok" | "error"
-  >("idle");
-  const [testError, setTestError] = useState("");
 
   useEffect(() => {
     getAccountabilitySettings().then(setSettings);
@@ -91,22 +94,6 @@ export default function AccountabilityTab() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleTest = async () => {
-    setTestStatus("sending");
-    setTestError("");
-    const resp = await chrome.runtime.sendMessage({
-      type: "TEST_EMAIL",
-      settings,
-    });
-    if (resp?.ok) {
-      setTestStatus("ok");
-    } else {
-      setTestStatus("error");
-      setTestError(resp?.error ?? "Unknown error");
-    }
-    setTimeout(() => setTestStatus("idle"), 3000);
-  };
-
   return (
     <Card className="gap-3 py-4">
       <CardHeader className="px-5">
@@ -116,25 +103,10 @@ export default function AccountabilityTab() {
           </h2>
         </CardTitle>
         <CardDescription>
-          Send emails via EmailJS when you change habits — honest, not harsh.
+          Get notified when you change your habits. Keep yourself honest.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 px-5 pb-4">
-        {/* Your name */}
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="acct-name">Your name</Label>
-          <Input
-            id="acct-name"
-            type="text"
-            placeholder="Your name"
-            value={settings.name}
-            onChange={(e) => update({ name: e.target.value })}
-          />
-          <p className="text-xs text-muted-foreground">
-            Used to personalise accountability emails.
-          </p>
-        </div>
-
         {/* Recipient email */}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="acct-email">Send notifications to</Label>
@@ -142,12 +114,12 @@ export default function AccountabilityTab() {
             id="acct-email"
             type="email"
             placeholder="friend@example.com"
+            aria-describedby="acct-email-hint"
             value={settings.email}
             onChange={(e) => update({ email: e.target.value })}
           />
-          <p className="text-xs text-muted-foreground">
-            EmailJS credentials are configured at build time and kept out of
-            storage.
+          <p id="acct-email-hint" className="text-xs text-muted-foreground">
+            Notifications go to this address.
           </p>
         </div>
 
@@ -183,6 +155,7 @@ export default function AccountabilityTab() {
                   </div>
                   <Switch
                     checked={settings[key]}
+                    aria-label={label}
                     onCheckedChange={(v) =>
                       update({ [key]: v } as Partial<AccountabilitySettings>)
                     }
@@ -201,22 +174,7 @@ export default function AccountabilityTab() {
             <Mail className="w-4 h-4 mr-1" />
             {saved ? "Saved!" : "Save Settings"}
           </Button>
-          <Button
-            variant="outline"
-            onClick={handleTest}
-            disabled={testStatus === "sending"}
-          >
-            <FlaskConical className="w-4 h-4 mr-1" />
-            {testStatus === "sending"
-              ? "Sending…"
-              : testStatus === "ok"
-                ? "Sent!"
-                : "Test Email"}
-          </Button>
         </div>
-        {testStatus === "error" && (
-          <p className="text-sm text-destructive">{testError}</p>
-        )}
       </CardContent>
     </Card>
   );

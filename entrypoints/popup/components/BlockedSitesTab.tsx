@@ -14,6 +14,7 @@ import { ShieldBan, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { SiteFavicon } from "./SiteFavicon";
 import { getBlockedSites, saveBlockedSites } from "@/lib/storage";
+import { normalizeDomain } from "@/lib/utils";
 import type { BlockedSite } from "@/lib/storage";
 
 function sendEmailEvent(
@@ -33,7 +34,7 @@ export default function BlockedSitesTab() {
 
   const handleBlock = async (e: React.FormEvent) => {
     e.preventDefault();
-    const domain = domainInput.trim().replace(/^www\./, "");
+    const domain = normalizeDomain(domainInput);
     if (!domain || sites.find((s) => s.domain === domain)) return;
     const next = [...sites, { domain }];
     setSites(next);
@@ -82,9 +83,9 @@ export default function BlockedSitesTab() {
         <Separator />
 
         <div className="flex flex-col gap-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
             Blocked Websites
-          </h2>
+          </h3>
 
           {sites.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-6 text-muted-foreground">
@@ -97,15 +98,16 @@ export default function BlockedSitesTab() {
                 {sites.map((site) => (
                   <motion.li
                     key={site.domain}
-                    layout
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    layout="position"
+                    initial={{ opacity: 0, y: 14, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{
                       opacity: 0,
-                      x: -16,
-                      transition: { duration: 0.15 },
+                      x: -24,
+                      scale: 0.94,
+                      transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
                     }}
-                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    transition={{ duration: 0.3, ease: [0.34, 1.4, 0.64, 1] }}
                   >
                     <div className="flex items-center justify-between px-3 py-2.5 rounded-lg border border-border bg-muted/30">
                       <div className="flex items-center gap-2 min-w-0">
@@ -120,7 +122,8 @@ export default function BlockedSitesTab() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                        className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive btn-glow-ghost-destructive"
+                        aria-label={`Unblock ${site.domain}`}
                         onClick={() => handleRemove(site.domain)}
                       >
                         <X className="w-3.5 h-3.5" />
