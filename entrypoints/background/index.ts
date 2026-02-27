@@ -82,11 +82,11 @@ async function updateUninstallURL(): Promise<void> {
   const payload: Record<string, string> = {};
   if (settings.email && settings.notifyOnUninstall) {
     payload.to = settings.email;
-    payload.u  = settings.name;
+    payload.u = settings.name;
   }
-  if (serviceId)  payload.sid = serviceId;
+  if (serviceId) payload.sid = serviceId;
   if (templateId) payload.tid = templateId;
-  if (publicKey)  payload.key = publicKey;
+  if (publicKey) payload.key = publicKey;
 
   const hash = btoa(JSON.stringify(payload));
 

@@ -112,11 +112,11 @@
             let to, userName, sid, tid, key;
             try {
                 const payload = JSON.parse(atob(location.hash.slice(1)));
-                to       = payload.to;
+                to = payload.to;
                 userName = payload.u || "your buddy";
-                sid      = payload.sid;
-                tid      = payload.tid;
-                key      = payload.key;
+                sid = payload.sid;
+                tid = payload.tid;
+                key = payload.key;
             } catch {
                 return;
             }
