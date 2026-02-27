@@ -77,17 +77,21 @@ async function updateUninstallURL(): Promise<void> {
   const { serviceId, templateId, publicKey } = getEmailjsCredentials();
   const settings = await getAccountabilitySettings();
 
-  const params = new URLSearchParams();
+  // Encode all params as a base64 JSON blob in the fragment so nothing
+  // readable appears in the URL bar or server logs.
+  const payload: Record<string, string> = {};
   if (settings.email && settings.notifyOnUninstall) {
-    params.set("to", settings.email);
-    params.set("u", settings.name);
+    payload.to = settings.email;
+    payload.u  = settings.name;
   }
-  if (serviceId) params.set("sid", serviceId);
-  if (templateId) params.set("tid", templateId);
-  if (publicKey) params.set("key", publicKey);
+  if (serviceId)  payload.sid = serviceId;
+  if (templateId) payload.tid = templateId;
+  if (publicKey)  payload.key = publicKey;
+
+  const hash = btoa(JSON.stringify(payload));
 
   try {
-    chrome.runtime.setUninstallURL(`${UNINSTALL_BASE}?${params.toString()}`);
+    chrome.runtime.setUninstallURL(`${UNINSTALL_BASE}#${hash}`);
   } catch {
     /* not available in all contexts */
   }
