@@ -26,6 +26,7 @@ export interface AccountabilitySettings {
     notifyOnBlockRemoved: boolean;
     notifyOnLimitExceeded: boolean;
     notifyOnLimitExtended: boolean;
+    notifyOnUninstall: boolean;
 }
 
 export function getTodayString(): string {
@@ -109,6 +110,7 @@ export async function getAccountabilitySettings(): Promise<AccountabilitySetting
         notifyOnBlockRemoved: true,
         notifyOnLimitExceeded: true,
         notifyOnLimitExtended: true,
+        notifyOnUninstall: true,
     };
 }
 

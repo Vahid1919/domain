@@ -26,7 +26,8 @@ type NotifyKey =
   | "notifyOnBlockAdded"
   | "notifyOnBlockRemoved"
   | "notifyOnLimitExceeded"
-  | "notifyOnLimitExtended";
+  | "notifyOnLimitExtended"
+  | "notifyOnUninstall";
 
 const DEFAULT_SETTINGS: AccountabilitySettings = {
   name: "",
@@ -37,6 +38,7 @@ const DEFAULT_SETTINGS: AccountabilitySettings = {
   notifyOnBlockRemoved: true,
   notifyOnLimitExceeded: true,
   notifyOnLimitExtended: true,
+  notifyOnUninstall: true,
 };
 
 const EVENT_TOGGLES: {
@@ -73,6 +75,11 @@ const EVENT_TOGGLES: {
     key: "notifyOnBlockRemoved",
     label: "Site Unblocked",
     description: "Email when a blocked site is removed.",
+  },
+  {
+    key: "notifyOnUninstall",
+    label: "Extension Uninstalled",
+    description: "Email if you ever uninstall the extension.",
   },
 ];
 

@@ -6,7 +6,8 @@ export type EmailEvent =
     | "block_added"
     | "block_removed"
     | "limit_exceeded"
-    | "limit_extended";
+    | "limit_extended"
+    | "extension_uninstalled";
 
 const eventNotifyKey: Record<
     EmailEvent,
@@ -18,6 +19,7 @@ const eventNotifyKey: Record<
         | "notifyOnBlockRemoved"
         | "notifyOnLimitExceeded"
         | "notifyOnLimitExtended"
+        | "notifyOnUninstall"
     >
 > = {
     limit_added: "notifyOnLimitAdded",
@@ -26,6 +28,7 @@ const eventNotifyKey: Record<
     block_removed: "notifyOnBlockRemoved",
     limit_exceeded: "notifyOnLimitExceeded",
     limit_extended: "notifyOnLimitExtended",
+    extension_uninstalled: "notifyOnUninstall",
 };
 
 function getEmailContent(
@@ -76,6 +79,13 @@ function getEmailContent(
                 subject: `⏩ ${n} extended their time limit for ${domain}`,
                 message: `${n} just gave themselves extra time on ${domain}. Accountability check — was that really necessary? 👀`,
             };
+
+        case "extension_uninstalled":
+            return {
+                title: "Extension Uninstalled",
+                subject: `🗑️ ${n} uninstalled their Domain extension`,
+                message: `${n} just uninstalled the Domain extension — the one keeping them accountable. Their limits and blocks are gone. You know what to do. 👀`,
+            };
     }
 }
 
@@ -89,6 +99,15 @@ const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID as
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as
     | string
     | undefined;
+
+/** Returns the three EmailJS build-time credentials (all may be undefined if not configured). */
+export function getEmailjsCredentials() {
+    return {
+        serviceId: EMAILJS_SERVICE_ID,
+        templateId: EMAILJS_TEMPLATE_ID,
+        publicKey: EMAILJS_PUBLIC_KEY,
+    };
+}
 
 export function emailjsConfigured(): boolean {
     return !!EMAILJS_SERVICE_ID && !!EMAILJS_TEMPLATE_ID && !!EMAILJS_PUBLIC_KEY;

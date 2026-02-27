@@ -5,13 +5,12 @@ import {
   saveMotivationalSettings,
 } from "@/lib/storage";
 import type { MotivationalSettings } from "@/lib/storage";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { X, Plus, Check, Pencil, Clock } from "lucide-react";
+import { Plus, Check, Pencil, Clock, Sparkles, ShieldCheck } from "lucide-react";
 
 function formatMinutes(m: number): string {
-  if (m < 60) return `${m}m`;
+  if (m < 60) return `${m} min`;
   const h = Math.floor(m / 60);
   const rem = m % 60;
   return rem > 0 ? `${h}h ${rem}m` : `${h}h`;
@@ -54,8 +53,6 @@ export default function BlockedApp() {
   const [limitMinutes, setLimitMinutes] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
-  const [editImage, setEditImage] = useState("");
-  const [imageError, setImageError] = useState(false);
   const [extendStatus, setExtendStatus] = useState<
     "idle" | "loading" | "done" | "error"
   >("idle");
@@ -67,7 +64,6 @@ export default function BlockedApp() {
     getMotivationalSettings().then((s) => {
       setSettings(s);
       setEditText(s.text);
-      setEditImage(s.imageUrl);
     });
 
     getLimitedSites().then((sites) => {
@@ -81,11 +77,10 @@ export default function BlockedApp() {
   const handleSave = async () => {
     const updated: MotivationalSettings = {
       text: editText.trim(),
-      imageUrl: editImage.trim(),
+      imageUrl: settings.imageUrl,
     };
     await saveMotivationalSettings(updated);
     setSettings(updated);
-    setImageError(false);
     setEditing(false);
   };
 
@@ -107,159 +102,161 @@ export default function BlockedApp() {
     }
   };
 
-  // Fall back to a built-in wallpaper when the user hasn't set one yet.
-  // This is a display-only fallback — storage.imageUrl stays "" until the
-  // user explicitly saves their own URL.
-  const FALLBACK_IMAGE =
-    "https://4kwallpapers.com/images/walls/thumbs_3t/16769.jpg";
-  const resolvedImage = settings.imageUrl || FALLBACK_IMAGE;
-  const hasBg = !imageError;
+  /* ─── colour tokens ───────────────────────────────────────── */
+  const accent = isPermanent
+    ? { h: 260, c: 0.18 } // soft violet for blocked
+    : { h: 200, c: 0.16 }; // sky‑teal for limit
+
+  const accentBase = `oklch(0.78 ${accent.c} ${accent.h})`;
+  const accentDim  = `oklch(0.78 ${accent.c} ${accent.h} / 22%)`;
+  const accentGlow = `oklch(0.78 ${accent.c} ${accent.h} / 40%)`;
 
   return (
     <div
       className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
       style={{
-        background: hasBg ? undefined : "oklch(0.08 0 0)",
-        backgroundImage: hasBg ? `url(${resolvedImage})` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
+        background: isPermanent
+          ? "radial-gradient(ellipse 120% 80% at 50% 0%, oklch(0.14 0.06 260) 0%, oklch(0.08 0.01 260) 70%)"
+          : "radial-gradient(ellipse 120% 80% at 50% 0%, oklch(0.13 0.05 200) 0%, oklch(0.07 0.01 220) 70%)",
       }}
     >
-      {resolvedImage && (
-        <img
-          src={resolvedImage}
-          className="hidden"
-          onError={() => setImageError(true)}
-          onLoad={() => setImageError(false)}
-          alt=""
-        />
-      )}
-
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-[8px]" />
-
-      {/* Pixel-grid texture */}
+      {/* Ambient glow behind card */}
       <div
-        className="absolute inset-0 opacity-[0.04]"
+        aria-hidden
+        className="pointer-events-none absolute rounded-full blur-3xl"
         style={{
-          backgroundImage:
-            "linear-gradient(rgba(34,211,238,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(34,211,238,0.25) 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
+          width: 480,
+          height: 320,
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -55%)",
+          background: `oklch(0.60 ${accent.c} ${accent.h} / 12%)`,
         }}
       />
 
       {/* Card */}
-      <div className="relative z-10 w-full max-w-sm mx-4">
+      <div className="relative z-10 w-full max-w-lg mx-6">
         <div
-          className="rounded-xl border p-7 text-center"
+          className="rounded-2xl border px-10 py-12 text-center"
           style={{
-            background: "oklch(0.12 0 0 / 55%)",
-            borderColor: isPermanent
-              ? "oklch(0.72 0.15 200 / 30%)"
-              : "oklch(0.78 0.14 200 / 30%)",
-            boxShadow: isPermanent
-              ? "0 0 0 1px oklch(0.72 0.15 200 / 10%), 0 24px 64px oklch(0 0 0 / 65%)"
-              : "0 0 0 1px oklch(0.78 0.14 200 / 10%), 0 24px 64px oklch(0 0 0 / 65%), 0 0 50px oklch(0.78 0.14 200 / 12%)",
-            backdropFilter: "blur(20px)",
+            background: "oklch(0.11 0.01 240 / 70%)",
+            borderColor: accentDim,
+            boxShadow: `0 0 0 1px ${accentDim}, 0 32px 80px oklch(0 0 0 / 70%), 0 0 60px ${accentGlow}`,
+            backdropFilter: "blur(24px)",
           }}
         >
-          {/* Icon — only for permanently blocked sites */}
-          {isPermanent && (
-            <div
-              className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-5"
-              style={{
-                background: "oklch(0.72 0.15 200 / 15%)",
-                border: "1px solid oklch(0.72 0.15 200 / 30%)",
-              }}
-            >
-              <X
-                style={{ color: "oklch(0.80 0.15 200)" }}
-                className="w-5 h-5"
-                strokeWidth={2.5}
-              />
-            </div>
-          )}
-
-          {/* Domain */}
-          <p
-            className="text-xs font-mono mb-2 tracking-widest uppercase"
-            style={{ color: "oklch(0.45 0.005 60)" }}
-          >
-            {domain}
-          </p>
-
-          <h1
-            className="font-pixel text-[13px] leading-relaxed mb-2"
+          {/* Icon badge */}
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-8"
             style={{
-              color: isPermanent
-                ? "oklch(0.78 0.15 200)"
-                : "oklch(0.82 0.14 200)",
-              textShadow: isPermanent
-                ? "0 0 12px oklch(0.72 0.15 200 / 45%)"
-                : "0 0 14px oklch(0.78 0.14 200 / 50%)",
+              background: `oklch(0.78 ${accent.c} ${accent.h} / 12%)`,
+              border: `1.5px solid ${accentDim}`,
+              boxShadow: `0 0 24px ${accentGlow}`,
             }}
           >
-            {isPermanent ? "BLOCKED" : "TIME\u2019S UP"}
+            {isPermanent
+              ? <ShieldCheck style={{ color: accentBase }} className="w-7 h-7" strokeWidth={1.8} />
+              : <Sparkles   style={{ color: accentBase }} className="w-7 h-7" strokeWidth={1.8} />
+            }
+          </div>
+
+          {/* Headline */}
+          <h1
+            className="text-5xl font-bold tracking-tight mb-3 leading-none"
+            style={{
+              color: accentBase,
+              textShadow: `0 0 32px ${accentGlow}`,
+            }}
+          >
+            {isPermanent ? "Blocked" : "Well done!"}
           </h1>
 
+          {/* Sub-headline */}
           <p
-            className="text-xs leading-relaxed mb-6 font-mono"
-            style={{ color: "oklch(0.46 0.005 60)" }}
+            className="text-xl font-medium mb-2"
+            style={{ color: "oklch(0.82 0.01 220)" }}
           >
             {isPermanent
-              ? "This site is on your blocked list."
-              : limitMinutes !== null
-                ? `Your ${formatMinutes(limitMinutes)} daily budget for this site has been used.`
-                : "Your daily budget for this site has been used."}
+              ? "This site is off-limits."
+              : "You've used your time for today."}
           </p>
 
-          {/* Motivational message */}
+          {/* Domain pill */}
+          <div className="flex items-center justify-center mb-8">
+            <span
+              className="inline-block rounded-full px-4 py-1 text-sm font-mono tracking-wide"
+              style={{
+                background: `oklch(0.78 ${accent.c} ${accent.h} / 10%)`,
+                border: `1px solid ${accentDim}`,
+                color: `oklch(0.65 ${accent.c} ${accent.h})`,
+              }}
+            >
+              {domain}
+            </span>
+          </div>
+
+          {/* Limit info */}
+          {!isPermanent && limitMinutes !== null && (
+            <p
+              className="text-base mb-8 leading-relaxed"
+              style={{ color: "oklch(0.55 0.01 220)" }}
+            >
+              Your daily allowance of&nbsp;
+              <span style={{ color: "oklch(0.75 0.01 220)", fontWeight: 600 }}>
+                {formatMinutes(limitMinutes)}
+              </span>
+              &nbsp;has been used. Take a break — you've earned it.
+            </p>
+          )}
+
+          {/* ─── Motivational message ─────────────────────────── */}
           {!editing ? (
             <button
-              className="w-full text-left rounded-lg px-4 py-3 mb-5 group transition-colors cursor-pointer"
+              className="w-full text-left rounded-xl px-6 py-5 mb-8 group transition-all cursor-pointer"
               style={{
-                background: "oklch(1 0 0 / 4%)",
-                border: "1px solid oklch(0.78 0.14 200 / 22%)",
+                background: `oklch(0.78 ${accent.c} ${accent.h} / 6%)`,
+                border: `1.5px solid ${accentDim}`,
               }}
               onClick={() => setEditing(true)}
             >
               <p
-                className="text-sm leading-relaxed italic font-mono"
-                style={{ color: "oklch(0.60 0.01 60)" }}
+                className="text-lg leading-relaxed italic"
+                style={{ color: "oklch(0.72 0.01 220)" }}
               >
                 &ldquo;
-                {settings.text || "Add a note to keep yourself on track\u2026"}
+                {settings.text || "Add a personal note to keep yourself on track\u2026"}
                 &rdquo;
               </p>
               <p
-                className="text-[11px] mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1"
-                style={{ color: "oklch(0.40 0.005 60)" }}
+                className="text-sm mt-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5"
+                style={{ color: "oklch(0.45 0.005 220)" }}
               >
-                <Pencil className="w-2.5 h-2.5" />
-                Edit message
+                <Pencil className="w-3.5 h-3.5" />
+                Edit your message
               </p>
             </button>
           ) : (
             <div
-              className="rounded-lg p-4 mb-5 text-left space-y-3"
+              className="rounded-xl p-6 mb-8 text-left space-y-4"
               style={{
                 background: "oklch(1 0 0 / 4%)",
-                border: "1px solid oklch(1 0 0 / 8%)",
+                border: "1.5px solid oklch(1 0 0 / 10%)",
               }}
             >
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label
-                  className="text-[11px] font-medium"
-                  style={{ color: "oklch(0.50 0.005 60)" }}
+                  className="text-sm font-medium"
+                  style={{ color: "oklch(0.55 0.005 220)" }}
                 >
-                  Message
+                  Your motivational message
                 </Label>
                 <textarea
-                  className="w-full rounded-md px-3 py-2 text-sm resize-none focus:outline-none transition font-mono"
+                  className="w-full rounded-lg px-4 py-3 text-base resize-none focus:outline-none transition"
                   style={{
-                    background: "oklch(1 0 0 / 8%)",
-                    border: "1px solid oklch(0.78 0.14 200 / 22%)",
-                    color: "oklch(0.88 0.005 60)",
+                    background: "oklch(1 0 0 / 7%)",
+                    border: `1.5px solid ${accentDim}`,
+                    color: "oklch(0.88 0.005 220)",
+                    lineHeight: "1.65",
                   }}
                   rows={3}
                   value={editText}
@@ -267,83 +264,70 @@ export default function BlockedApp() {
                   placeholder="e.g. Your goals matter more than this."
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label
-                  className="text-[11px] font-medium"
-                  style={{ color: "oklch(0.50 0.005 60)" }}
-                >
-                  Background image URL
-                </Label>
-                <Input
-                  className="h-8 text-xs font-mono"
-                  style={{
-                    background: "oklch(1 0 0 / 8%)",
-                    borderColor: "oklch(0.78 0.14 200 / 22%)",
-                    color: "oklch(0.88 0.005 60)",
-                  }}
-                  value={editImage}
-                  onChange={(e) => setEditImage(e.target.value)}
-                  placeholder="https://\u2026"
-                />
-              </div>
               <div className="flex gap-2 justify-end">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 text-xs"
-                  style={{ color: "oklch(0.40 0.005 60)" }}
+                  className="text-sm h-9 px-4"
+                  style={{ color: "oklch(0.45 0.005 220)" }}
                   onClick={() => setEditing(false)}
                 >
                   Cancel
                 </Button>
-                <Button size="sm" className="h-7 text-xs" onClick={handleSave}>
+                <Button size="sm" className="text-sm h-9 px-4" onClick={handleSave}>
                   Save
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2.5">
+          {/* ─── Actions ──────────────────────────────────────── */}
+          <div className="flex flex-col gap-4">
             {!isPermanent && (
               <>
-                {/* Extend buttons: +1m / +5m / +10m */}
+                {/* Extend row */}
+                <p
+                  className="text-sm font-medium mb-0.5"
+                  style={{ color: "oklch(0.45 0.005 220)" }}
+                >
+                  Need a little more time?
+                </p>
+
                 {extendStatus === "done" ? (
                   <div
-                    className="w-full flex items-center justify-center gap-2 rounded-md py-2.5 text-sm font-semibold"
+                    className="w-full flex items-center justify-center gap-2.5 rounded-xl py-4 text-base font-semibold"
                     style={{
-                      background: "oklch(0.55 0.16 160 / 20%)",
-                      border: "1px solid oklch(0.55 0.16 160 / 40%)",
-                      color: "oklch(0.70 0.16 160)",
+                      background: "oklch(0.55 0.16 160 / 18%)",
+                      border: "1.5px solid oklch(0.55 0.16 160 / 40%)",
+                      color: "oklch(0.72 0.16 160)",
                     }}
                   >
-                    <Check className="w-4 h-4" />+{extendingMinutes}m extended
+                    <Check className="w-5 h-5" />
+                    +{extendingMinutes}m added — enjoy!
                   </div>
                 ) : (
-                  <div className="flex gap-2">
+                  <div className="grid grid-cols-3 gap-3">
                     {([1, 5, 10] as const).map((mins) => (
                       <button
                         key={mins}
                         onClick={() => handleExtend(mins)}
                         disabled={extendStatus === "loading"}
-                        className="flex-1 flex items-center justify-center gap-1 rounded-md py-2.5 text-sm font-semibold transition-all disabled:opacity-60"
+                        className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-4 text-base font-semibold transition-all disabled:opacity-50"
                         style={{
-                          background: "oklch(0.78 0.14 200 / 15%)",
-                          border: "1px solid oklch(0.78 0.14 200 / 50%)",
+                          background: `oklch(0.78 ${accent.c} ${accent.h} / 12%)`,
+                          border: `1.5px solid oklch(0.78 ${accent.c} ${accent.h} / 45%)`,
                           color:
-                            extendStatus === "loading" &&
-                            extendingMinutes === mins
-                              ? "oklch(0.84 0.14 200 / 60%)"
-                              : "oklch(0.84 0.14 200)",
+                            extendStatus === "loading" && extendingMinutes === mins
+                              ? `oklch(0.78 ${accent.c} ${accent.h} / 50%)`
+                              : accentBase,
                         }}
                       >
-                        {extendStatus === "loading" &&
-                        extendingMinutes === mins ? (
-                          "\u2026"
+                        {extendStatus === "loading" && extendingMinutes === mins ? (
+                          <span className="text-xl leading-none">&hellip;</span>
                         ) : (
                           <>
-                            <Plus className="w-3 h-3" />
-                            {mins}m
+                            <span className="text-2xl leading-none font-bold">+{mins}</span>
+                            <span className="text-xs opacity-75">min</span>
                           </>
                         )}
                       </button>
@@ -351,14 +335,22 @@ export default function BlockedApp() {
                   </div>
                 )}
 
-                {/* Resets at midnight */}
+                {/* Countdown */}
                 <div
-                  className="flex items-center justify-center gap-1.5 text-xs font-mono"
-                  style={{ color: "oklch(0.38 0.005 60)" }}
+                  className="flex items-center justify-center gap-2 mt-1 rounded-xl py-3 px-4"
+                  style={{
+                    background: "oklch(1 0 0 / 3%)",
+                    border: "1px solid oklch(1 0 0 / 7%)",
+                  }}
                 >
-                  <Clock className="w-3 h-3" />
-                  resets in&nbsp;
-                  <span style={{ color: "oklch(0.78 0.14 200)" }}>
+                  <Clock className="w-4 h-4" style={{ color: "oklch(0.42 0.005 220)" }} />
+                  <span className="text-sm" style={{ color: "oklch(0.42 0.005 220)" }}>
+                    Resets in
+                  </span>
+                  <span
+                    className="text-lg font-mono font-semibold tabular-nums"
+                    style={{ color: accentBase }}
+                  >
                     {countdown}
                   </span>
                 </div>
@@ -367,10 +359,10 @@ export default function BlockedApp() {
 
             {isPermanent && (
               <p
-                className="text-[11px] font-mono"
-                style={{ color: "oklch(0.38 0.005 60)" }}
+                className="text-sm"
+                style={{ color: "oklch(0.40 0.005 220)" }}
               >
-                Remove it from the extension to regain access.
+                To regain access, remove it from your blocked list in the extension.
               </p>
             )}
           </div>

@@ -7,7 +7,7 @@ import {
   extendLimit,
 } from "@/lib/storage";
 import type { LimitedSite, BlockedSite, UsageEntry } from "@/lib/storage";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, getEmailjsCredentials } from "@/lib/email";
 import type { EmailEvent } from "@/lib/email";
 
 // ── In-memory state ──────────────────────────────────────────────────────────
@@ -69,6 +69,30 @@ async function dispatchEmail(event: EmailEvent, domain: string): Promise<void> {
   }
 }
 
+// ── Uninstall URL ─────────────────────────────────────────────────────────────
+// Build the uninstall redirect URL from current accountability settings so the
+// hosted page can email the accountability partner when the extension is removed.
+async function updateUninstallURL(): Promise<void> {
+  const UNINSTALL_BASE = "https://vahid1919.github.io/domain/uninstall/";
+  const { serviceId, templateId, publicKey } = getEmailjsCredentials();
+  const settings = await getAccountabilitySettings();
+
+  const params = new URLSearchParams();
+  if (settings.email && settings.notifyOnUninstall) {
+    params.set("to", settings.email);
+    params.set("u", settings.name);
+  }
+  if (serviceId) params.set("sid", serviceId);
+  if (templateId) params.set("tid", templateId);
+  if (publicKey) params.set("key", publicKey);
+
+  try {
+    chrome.runtime.setUninstallURL(`${UNINSTALL_BASE}?${params.toString()}`);
+  } catch {
+    /* not available in all contexts */
+  }
+}
+
 // ── Session management ────────────────────────────────────────────────────────
 function beginTracking(domain: string): void {
   ensureUsageToday(domain);
@@ -126,7 +150,7 @@ async function onTick(): Promise<void> {
             limitSeconds,
             remainingSeconds,
           })
-          .catch(() => {});
+          .catch(() => { });
 
         // Flush every 10 s to keep storage fresh without hammering disk
         if (Date.now() - lastFlushAt > 10_000) void flushCache();
@@ -183,7 +207,7 @@ async function onTick(): Promise<void> {
         limitSeconds,
         remainingSeconds,
       })
-      .catch(() => {});
+      .catch(() => { });
 
     if (Date.now() - lastFlushAt > 10_000) void flushCache();
 
@@ -276,7 +300,7 @@ async function updateActiveTab(tabId: number, url?: string): Promise<void> {
       limitSeconds,
       remainingSeconds: limitSeconds - usedSeconds,
     })
-    .catch(() => {});
+    .catch(() => { });
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -307,6 +331,9 @@ export default defineBackground(async () => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab?.id && tab.url) await updateActiveTab(tab.id, tab.url);
+
+  // Register uninstall redirect URL with current accountability settings.
+  void updateUninstallURL();
 
   chrome.tabs.onActivated.addListener(({ tabId }) => {
     void updateActiveTab(tabId);
@@ -341,6 +368,9 @@ export default defineBackground(async () => {
     if (changes.blockedSites) {
       blockedSitesCache =
         (changes.blockedSites.newValue as BlockedSite[] | undefined) ?? [];
+    }
+    if (changes.accountabilitySettings) {
+      void updateUninstallURL();
     }
   });
 
@@ -419,7 +449,7 @@ export default defineBackground(async () => {
 
   chrome.runtime.onConnect.addListener((port) => {
     if (port.name !== "keepalive") return;
-    port.onDisconnect.addListener(() => {});
+    port.onDisconnect.addListener(() => { });
   });
 
   chrome.alarms.create("flush", { periodInMinutes: 1 });
