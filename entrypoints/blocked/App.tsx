@@ -5,9 +5,7 @@ import {
   saveMotivationalSettings,
 } from "@/lib/storage";
 import type { MotivationalSettings } from "@/lib/storage";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Plus, Check, Pencil, Clock, Sparkles, ShieldCheck } from "lucide-react";
+import { Check, Pencil, Clock } from "lucide-react";
 
 function formatMinutes(m: number): string {
   if (m < 60) return `${m} min`;
@@ -102,271 +100,183 @@ export default function BlockedApp() {
     }
   };
 
-  /* ─── colour tokens ───────────────────────────────────────── */
-  const accent = isPermanent
-    ? { h: 260, c: 0.18 } // soft violet for blocked
-    : { h: 200, c: 0.16 }; // sky‑teal for limit
-
-  const accentBase = `oklch(0.78 ${accent.c} ${accent.h})`;
-  const accentDim  = `oklch(0.78 ${accent.c} ${accent.h} / 22%)`;
-  const accentGlow = `oklch(0.78 ${accent.c} ${accent.h} / 40%)`;
-
   return (
-    <div
-      className="min-h-screen w-full flex items-center justify-center relative overflow-hidden"
-      style={{
-        background: isPermanent
-          ? "radial-gradient(ellipse 120% 80% at 50% 0%, oklch(0.14 0.06 260) 0%, oklch(0.08 0.01 260) 70%)"
-          : "radial-gradient(ellipse 120% 80% at 50% 0%, oklch(0.13 0.05 200) 0%, oklch(0.07 0.01 220) 70%)",
-      }}
-    >
-      {/* Ambient glow behind card */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute rounded-full blur-3xl"
-        style={{
-          width: 480,
-          height: 320,
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -55%)",
-          background: `oklch(0.60 ${accent.c} ${accent.h} / 12%)`,
-        }}
-      />
+    <div style={{
+      background: "#0a0a0a",
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      padding: "24px",
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    }}>
+      <div style={{
+        background: "#111111",
+        border: "1px solid #1f1f1f",
+        borderRadius: "16px",
+        padding: "40px 36px",
+        maxWidth: "480px",
+        width: "100%",
+        textAlign: "center",
+      }}>
+        {/* Icon */}
+        <div style={{ fontSize: "2.5rem", marginBottom: "20px" }}>
+          {isPermanent ? "🚫" : "⏰"}
+        </div>
 
-      {/* Card */}
-      <div className="relative z-10 w-full max-w-lg mx-6">
-        <div
-          className="rounded-2xl border px-10 py-12 text-center"
-          style={{
-            background: "oklch(0.11 0.01 240 / 70%)",
-            borderColor: accentDim,
-            boxShadow: `0 0 0 1px ${accentDim}, 0 32px 80px oklch(0 0 0 / 70%), 0 0 60px ${accentGlow}`,
-            backdropFilter: "blur(24px)",
-          }}
-        >
-          {/* Icon badge */}
-          <div
-            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-8"
-            style={{
-              background: `oklch(0.78 ${accent.c} ${accent.h} / 12%)`,
-              border: `1.5px solid ${accentDim}`,
-              boxShadow: `0 0 24px ${accentGlow}`,
-            }}
-          >
-            {isPermanent
-              ? <ShieldCheck style={{ color: accentBase }} className="w-7 h-7" strokeWidth={1.8} />
-              : <Sparkles   style={{ color: accentBase }} className="w-7 h-7" strokeWidth={1.8} />
-            }
-          </div>
+        {/* Headline */}
+        <h1 style={{ fontSize: "1.4rem", fontWeight: 700, marginBottom: "10px", color: "#e0e0e0" }}>
+          {isPermanent ? "Site Blocked" : "Time's Up"}
+        </h1>
 
-          {/* Headline */}
-          <h1
-            className="text-5xl font-bold tracking-tight mb-3 leading-none"
-            style={{
-              color: accentBase,
-              textShadow: `0 0 32px ${accentGlow}`,
-            }}
-          >
-            {isPermanent ? "Blocked" : "Well done!"}
-          </h1>
+        {/* Domain */}
+        <p style={{ fontSize: "0.95rem", color: "#707070", lineHeight: 1.6, marginBottom: "6px" }}>
+          {isPermanent
+            ? <>This site is off-limits.<br /><span style={{ color: "#505050", fontSize: "0.85rem", fontFamily: "monospace" }}>{domain}</span></>
+            : <>You've used your daily limit for <span style={{ color: "#505050", fontSize: "0.85rem", fontFamily: "monospace" }}>{domain}</span>.</>
+          }
+        </p>
 
-          {/* Sub-headline */}
-          <p
-            className="text-xl font-medium mb-2"
-            style={{ color: "oklch(0.82 0.01 220)" }}
-          >
-            {isPermanent
-              ? "This site is off-limits."
-              : "You've used your time for today."}
+        {!isPermanent && limitMinutes !== null && (
+          <p style={{ fontSize: "0.85rem", color: "#505050", marginBottom: "0", lineHeight: 1.6 }}>
+            Daily allowance: <span style={{ color: "#808080" }}>{formatMinutes(limitMinutes)}</span>
           </p>
+        )}
 
-          {/* Domain pill */}
-          <div className="flex items-center justify-center mb-8">
-            <span
-              className="inline-block rounded-full px-4 py-1 text-sm font-mono tracking-wide"
-              style={{
-                background: `oklch(0.78 ${accent.c} ${accent.h} / 10%)`,
-                border: `1px solid ${accentDim}`,
-                color: `oklch(0.65 ${accent.c} ${accent.h})`,
-              }}
-            >
-              {domain}
-            </span>
-          </div>
+        <hr style={{ border: "none", borderTop: "1px solid #1f1f1f", margin: "28px 0" }} />
 
-          {/* Limit info */}
-          {!isPermanent && limitMinutes !== null && (
-            <p
-              className="text-base mb-8 leading-relaxed"
-              style={{ color: "oklch(0.55 0.01 220)" }}
-            >
-              Your daily allowance of&nbsp;
-              <span style={{ color: "oklch(0.75 0.01 220)", fontWeight: 600 }}>
-                {formatMinutes(limitMinutes)}
-              </span>
-              &nbsp;has been used. Take a break — you've earned it.
+        {/* Motivational message */}
+        {!editing ? (
+          <button
+            onClick={() => setEditing(true)}
+            style={{
+              width: "100%",
+              background: "transparent",
+              border: "1px solid #1f1f1f",
+              borderRadius: "10px",
+              padding: "16px 20px",
+              cursor: "pointer",
+              textAlign: "left",
+              marginBottom: "24px",
+            }}
+          >
+            <p style={{ fontSize: "0.9rem", color: "#606060", lineHeight: 1.6, fontStyle: "italic", margin: 0 }}>
+              &ldquo;{settings.text || "Add a personal note to keep yourself on track…"}&rdquo;
             </p>
-          )}
-
-          {/* ─── Motivational message ─────────────────────────── */}
-          {!editing ? (
-            <button
-              className="w-full text-left rounded-xl px-6 py-5 mb-8 group transition-all cursor-pointer"
+            <p style={{ fontSize: "0.75rem", color: "#3a3a3a", marginTop: "8px", display: "flex", alignItems: "center", gap: "4px" }}>
+              <Pencil style={{ width: "12px", height: "12px" }} /> Edit message
+            </p>
+          </button>
+        ) : (
+          <div style={{
+            border: "1px solid #1f1f1f",
+            borderRadius: "10px",
+            padding: "16px 20px",
+            marginBottom: "24px",
+            textAlign: "left",
+          }}>
+            <textarea
+              rows={3}
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              placeholder="e.g. Your goals matter more than this."
               style={{
-                background: `oklch(0.78 ${accent.c} ${accent.h} / 6%)`,
-                border: `1.5px solid ${accentDim}`,
+                width: "100%",
+                background: "#0a0a0a",
+                border: "1px solid #1f1f1f",
+                borderRadius: "8px",
+                padding: "10px 14px",
+                color: "#e0e0e0",
+                fontSize: "0.9rem",
+                lineHeight: 1.6,
+                resize: "none",
+                outline: "none",
+                fontFamily: "inherit",
               }}
-              onClick={() => setEditing(true)}
-            >
-              <p
-                className="text-lg leading-relaxed italic"
-                style={{ color: "oklch(0.72 0.01 220)" }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "10px" }}>
+              <button
+                onClick={() => setEditing(false)}
+                style={{ background: "none", border: "none", color: "#505050", fontSize: "0.85rem", cursor: "pointer" }}
               >
-                &ldquo;
-                {settings.text || "Add a personal note to keep yourself on track\u2026"}
-                &rdquo;
-              </p>
-              <p
-                className="text-sm mt-3 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5"
-                style={{ color: "oklch(0.45 0.005 220)" }}
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                style={{
+                  background: "#1f1f1f",
+                  border: "1px solid #2a2a2a",
+                  borderRadius: "6px",
+                  color: "#e0e0e0",
+                  fontSize: "0.85rem",
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                }}
               >
-                <Pencil className="w-3.5 h-3.5" />
-                Edit your message
-              </p>
-            </button>
-          ) : (
-            <div
-              className="rounded-xl p-6 mb-8 text-left space-y-4"
-              style={{
-                background: "oklch(1 0 0 / 4%)",
-                border: "1.5px solid oklch(1 0 0 / 10%)",
-              }}
-            >
-              <div className="space-y-2">
-                <Label
-                  className="text-sm font-medium"
-                  style={{ color: "oklch(0.55 0.005 220)" }}
-                >
-                  Your motivational message
-                </Label>
-                <textarea
-                  className="w-full rounded-lg px-4 py-3 text-base resize-none focus:outline-none transition"
-                  style={{
-                    background: "oklch(1 0 0 / 7%)",
-                    border: `1.5px solid ${accentDim}`,
-                    color: "oklch(0.88 0.005 220)",
-                    lineHeight: "1.65",
-                  }}
-                  rows={3}
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  placeholder="e.g. Your goals matter more than this."
-                />
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-sm h-9 px-4"
-                  style={{ color: "oklch(0.45 0.005 220)" }}
-                  onClick={() => setEditing(false)}
-                >
-                  Cancel
-                </Button>
-                <Button size="sm" className="text-sm h-9 px-4" onClick={handleSave}>
-                  Save
-                </Button>
-              </div>
+                Save
+              </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ─── Actions ──────────────────────────────────────── */}
-          <div className="flex flex-col gap-4">
-            {!isPermanent && (
-              <>
-                {/* Extend row */}
-                <p
-                  className="text-sm font-medium mb-0.5"
-                  style={{ color: "oklch(0.45 0.005 220)" }}
-                >
-                  Need a little more time?
-                </p>
+        {/* Extend buttons (limit only) */}
+        {!isPermanent && (
+          <>
+            <p style={{ fontSize: "0.8rem", color: "#505050", marginBottom: "12px" }}>Need a little more time?</p>
 
-                {extendStatus === "done" ? (
-                  <div
-                    className="w-full flex items-center justify-center gap-2.5 rounded-xl py-4 text-base font-semibold"
+            {extendStatus === "done" ? (
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                background: "#0d2318", border: "1px solid #1a4a2e", borderRadius: "10px",
+                padding: "14px", color: "#22c55e", fontSize: "0.9rem", fontWeight: 500,
+                marginBottom: "20px",
+              }}>
+                <Check style={{ width: "16px", height: "16px" }} />
+                +{extendingMinutes}m added — enjoy!
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "20px" }}>
+                {([1, 5, 10] as const).map((mins) => (
+                  <button
+                    key={mins}
+                    onClick={() => handleExtend(mins)}
+                    disabled={extendStatus === "loading"}
                     style={{
-                      background: "oklch(0.55 0.16 160 / 18%)",
-                      border: "1.5px solid oklch(0.55 0.16 160 / 40%)",
-                      color: "oklch(0.72 0.16 160)",
+                      background: "#111111",
+                      border: "1px solid #1f1f1f",
+                      borderRadius: "10px",
+                      padding: "14px 0",
+                      color: extendStatus === "loading" && extendingMinutes === mins ? "#3a3a3a" : "#e0e0e0",
+                      cursor: extendStatus === "loading" ? "default" : "pointer",
+                      fontSize: "0.85rem",
                     }}
                   >
-                    <Check className="w-5 h-5" />
-                    +{extendingMinutes}m added — enjoy!
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-3">
-                    {([1, 5, 10] as const).map((mins) => (
-                      <button
-                        key={mins}
-                        onClick={() => handleExtend(mins)}
-                        disabled={extendStatus === "loading"}
-                        className="flex flex-col items-center justify-center gap-0.5 rounded-xl py-4 text-base font-semibold transition-all disabled:opacity-50"
-                        style={{
-                          background: `oklch(0.78 ${accent.c} ${accent.h} / 12%)`,
-                          border: `1.5px solid oklch(0.78 ${accent.c} ${accent.h} / 45%)`,
-                          color:
-                            extendStatus === "loading" && extendingMinutes === mins
-                              ? `oklch(0.78 ${accent.c} ${accent.h} / 50%)`
-                              : accentBase,
-                        }}
-                      >
-                        {extendStatus === "loading" && extendingMinutes === mins ? (
-                          <span className="text-xl leading-none">&hellip;</span>
-                        ) : (
-                          <>
-                            <span className="text-2xl leading-none font-bold">+{mins}</span>
-                            <span className="text-xs opacity-75">min</span>
-                          </>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Countdown */}
-                <div
-                  className="flex items-center justify-center gap-2 mt-1 rounded-xl py-3 px-4"
-                  style={{
-                    background: "oklch(1 0 0 / 3%)",
-                    border: "1px solid oklch(1 0 0 / 7%)",
-                  }}
-                >
-                  <Clock className="w-4 h-4" style={{ color: "oklch(0.42 0.005 220)" }} />
-                  <span className="text-sm" style={{ color: "oklch(0.42 0.005 220)" }}>
-                    Resets in
-                  </span>
-                  <span
-                    className="text-lg font-mono font-semibold tabular-nums"
-                    style={{ color: accentBase }}
-                  >
-                    {countdown}
-                  </span>
-                </div>
-              </>
+                    {extendStatus === "loading" && extendingMinutes === mins
+                      ? "…"
+                      : <><span style={{ display: "block", fontSize: "1.3rem", fontWeight: 700 }}>+{mins}</span><span style={{ fontSize: "0.75rem", color: "#505050" }}>min</span></>
+                    }
+                  </button>
+                ))}
+              </div>
             )}
 
-            {isPermanent && (
-              <p
-                className="text-sm"
-                style={{ color: "oklch(0.40 0.005 220)" }}
-              >
-                To regain access, remove it from your blocked list in the extension.
-              </p>
-            )}
-          </div>
-        </div>
+            {/* Countdown */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+              borderTop: "1px solid #1f1f1f", paddingTop: "20px",
+              color: "#505050", fontSize: "0.85rem",
+            }}>
+              <Clock style={{ width: "14px", height: "14px" }} />
+              Resets in <span style={{ fontFamily: "monospace", color: "#808080", fontWeight: 600, marginLeft: "4px" }}>{countdown}</span>
+            </div>
+          </>
+        )}
+
+        {isPermanent && (
+          <p style={{ fontSize: "0.8rem", color: "#505050" }}>
+            To regain access, remove it from your blocked list in the extension.
+          </p>
+        )}
       </div>
     </div>
   );
