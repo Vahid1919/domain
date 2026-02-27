@@ -101,49 +101,109 @@ export default function BlockedApp() {
   };
 
   return (
-    <div style={{
-      background: "#0a0a0a",
-      minHeight: "100vh",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px",
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    }}>
-      <div style={{
-        background: "#111111",
-        border: "1px solid #1f1f1f",
-        borderRadius: "16px",
-        padding: "40px 36px",
-        maxWidth: "480px",
-        width: "100%",
-        textAlign: "center",
-      }}>
+    <div
+      style={{
+        background: "#0a0a0a",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "24px",
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      }}
+    >
+      <div
+        style={{
+          background: "#111111",
+          border: "1px solid #1f1f1f",
+          borderRadius: "16px",
+          padding: "40px 36px",
+          maxWidth: "480px",
+          width: "100%",
+          textAlign: "center",
+        }}
+      >
         {/* Icon */}
         <div style={{ fontSize: "2.5rem", marginBottom: "20px" }}>
           {isPermanent ? "🚫" : "⏰"}
         </div>
 
         {/* Headline */}
-        <h1 style={{ fontSize: "1.4rem", fontWeight: 700, marginBottom: "10px", color: "#e0e0e0" }}>
+        <h1
+          style={{
+            fontSize: "1.4rem",
+            fontWeight: 700,
+            marginBottom: "10px",
+            color: "#e0e0e0",
+          }}
+        >
           {isPermanent ? "Site Blocked" : "Time's Up"}
         </h1>
 
         {/* Domain */}
-        <p style={{ fontSize: "0.95rem", color: "#707070", lineHeight: 1.6, marginBottom: "6px" }}>
-          {isPermanent
-            ? <>This site is off-limits.<br /><span style={{ color: "#505050", fontSize: "0.85rem", fontFamily: "monospace" }}>{domain}</span></>
-            : <>You've used your daily limit for <span style={{ color: "#505050", fontSize: "0.85rem", fontFamily: "monospace" }}>{domain}</span>.</>
-          }
+        <p
+          style={{
+            fontSize: "0.95rem",
+            color: "#707070",
+            lineHeight: 1.6,
+            marginBottom: "6px",
+          }}
+        >
+          {isPermanent ? (
+            <>
+              This site is off-limits.
+              <br />
+              <span
+                style={{
+                  color: "#505050",
+                  fontSize: "0.85rem",
+                  fontFamily: "monospace",
+                }}
+              >
+                {domain}
+              </span>
+            </>
+          ) : (
+            <>
+              You've used your daily limit for{" "}
+              <span
+                style={{
+                  color: "#505050",
+                  fontSize: "0.85rem",
+                  fontFamily: "monospace",
+                }}
+              >
+                {domain}
+              </span>
+              .
+            </>
+          )}
         </p>
 
         {!isPermanent && limitMinutes !== null && (
-          <p style={{ fontSize: "0.85rem", color: "#505050", marginBottom: "0", lineHeight: 1.6 }}>
-            Daily allowance: <span style={{ color: "#808080" }}>{formatMinutes(limitMinutes)}</span>
+          <p
+            style={{
+              fontSize: "0.85rem",
+              color: "#505050",
+              marginBottom: "0",
+              lineHeight: 1.6,
+            }}
+          >
+            Daily allowance:{" "}
+            <span style={{ color: "#808080" }}>
+              {formatMinutes(limitMinutes)}
+            </span>
           </p>
         )}
 
-        <hr style={{ border: "none", borderTop: "1px solid #1f1f1f", margin: "28px 0" }} />
+        <hr
+          style={{
+            border: "none",
+            borderTop: "1px solid #1f1f1f",
+            margin: "28px 0",
+          }}
+        />
 
         {/* Motivational message */}
         {!editing ? (
@@ -160,21 +220,43 @@ export default function BlockedApp() {
               marginBottom: "24px",
             }}
           >
-            <p style={{ fontSize: "0.9rem", color: "#606060", lineHeight: 1.6, fontStyle: "italic", margin: 0 }}>
-              &ldquo;{settings.text || "Add a personal note to keep yourself on track…"}&rdquo;
+            <p
+              style={{
+                fontSize: "0.9rem",
+                color: "#606060",
+                lineHeight: 1.6,
+                fontStyle: "italic",
+                margin: 0,
+              }}
+            >
+              &ldquo;
+              {settings.text ||
+                "Add a personal note to keep yourself on track…"}
+              &rdquo;
             </p>
-            <p style={{ fontSize: "0.75rem", color: "#3a3a3a", marginTop: "8px", display: "flex", alignItems: "center", gap: "4px" }}>
+            <p
+              style={{
+                fontSize: "0.75rem",
+                color: "#3a3a3a",
+                marginTop: "8px",
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+              }}
+            >
               <Pencil style={{ width: "12px", height: "12px" }} /> Edit message
             </p>
           </button>
         ) : (
-          <div style={{
-            border: "1px solid #1f1f1f",
-            borderRadius: "10px",
-            padding: "16px 20px",
-            marginBottom: "24px",
-            textAlign: "left",
-          }}>
+          <div
+            style={{
+              border: "1px solid #1f1f1f",
+              borderRadius: "10px",
+              padding: "16px 20px",
+              marginBottom: "24px",
+              textAlign: "left",
+            }}
+          >
             <textarea
               rows={3}
               value={editText}
@@ -194,10 +276,23 @@ export default function BlockedApp() {
                 fontFamily: "inherit",
               }}
             />
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "10px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "8px",
+                marginTop: "10px",
+              }}
+            >
               <button
                 onClick={() => setEditing(false)}
-                style={{ background: "none", border: "none", color: "#505050", fontSize: "0.85rem", cursor: "pointer" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "#505050",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
               >
                 Cancel
               </button>
@@ -222,20 +317,45 @@ export default function BlockedApp() {
         {/* Extend buttons (limit only) */}
         {!isPermanent && (
           <>
-            <p style={{ fontSize: "0.8rem", color: "#505050", marginBottom: "12px" }}>Need a little more time?</p>
+            <p
+              style={{
+                fontSize: "0.8rem",
+                color: "#505050",
+                marginBottom: "12px",
+              }}
+            >
+              Need a little more time?
+            </p>
 
             {extendStatus === "done" ? (
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-                background: "#0d2318", border: "1px solid #1a4a2e", borderRadius: "10px",
-                padding: "14px", color: "#22c55e", fontSize: "0.9rem", fontWeight: 500,
-                marginBottom: "20px",
-              }}>
-                <Check style={{ width: "16px", height: "16px" }} />
-                +{extendingMinutes}m added — enjoy!
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  background: "#0d2318",
+                  border: "1px solid #1a4a2e",
+                  borderRadius: "10px",
+                  padding: "14px",
+                  color: "#22c55e",
+                  fontSize: "0.9rem",
+                  fontWeight: 500,
+                  marginBottom: "20px",
+                }}
+              >
+                <Check style={{ width: "16px", height: "16px" }} />+
+                {extendingMinutes}m added — enjoy!
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "20px" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  gap: "10px",
+                  marginBottom: "20px",
+                }}
+              >
                 {([1, 5, 10] as const).map((mins) => (
                   <button
                     key={mins}
@@ -246,28 +366,63 @@ export default function BlockedApp() {
                       border: "1px solid #1f1f1f",
                       borderRadius: "10px",
                       padding: "14px 0",
-                      color: extendStatus === "loading" && extendingMinutes === mins ? "#3a3a3a" : "#e0e0e0",
-                      cursor: extendStatus === "loading" ? "default" : "pointer",
+                      color:
+                        extendStatus === "loading" && extendingMinutes === mins
+                          ? "#3a3a3a"
+                          : "#e0e0e0",
+                      cursor:
+                        extendStatus === "loading" ? "default" : "pointer",
                       fontSize: "0.85rem",
                     }}
                   >
-                    {extendStatus === "loading" && extendingMinutes === mins
-                      ? "…"
-                      : <><span style={{ display: "block", fontSize: "1.3rem", fontWeight: 700 }}>+{mins}</span><span style={{ fontSize: "0.75rem", color: "#505050" }}>min</span></>
-                    }
+                    {extendStatus === "loading" && extendingMinutes === mins ? (
+                      "…"
+                    ) : (
+                      <>
+                        <span
+                          style={{
+                            display: "block",
+                            fontSize: "1.3rem",
+                            fontWeight: 700,
+                          }}
+                        >
+                          +{mins}
+                        </span>
+                        <span style={{ fontSize: "0.75rem", color: "#505050" }}>
+                          min
+                        </span>
+                      </>
+                    )}
                   </button>
                 ))}
               </div>
             )}
 
             {/* Countdown */}
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
-              borderTop: "1px solid #1f1f1f", paddingTop: "20px",
-              color: "#505050", fontSize: "0.85rem",
-            }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                borderTop: "1px solid #1f1f1f",
+                paddingTop: "20px",
+                color: "#505050",
+                fontSize: "0.85rem",
+              }}
+            >
               <Clock style={{ width: "14px", height: "14px" }} />
-              Resets in <span style={{ fontFamily: "monospace", color: "#808080", fontWeight: 600, marginLeft: "4px" }}>{countdown}</span>
+              Resets in{" "}
+              <span
+                style={{
+                  fontFamily: "monospace",
+                  color: "#808080",
+                  fontWeight: 600,
+                  marginLeft: "4px",
+                }}
+              >
+                {countdown}
+              </span>
             </div>
           </>
         )}
